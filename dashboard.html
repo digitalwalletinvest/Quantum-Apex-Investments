@@ -1,0 +1,198 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Dashboard - Quantum Apex</title>
+
+<script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-database.js"></script>
+<script src="https://cdn.tailwindcss.com"></script>
+
+<style>
+body { background:#0f172a; font-family: 'Inter', sans-serif; }
+.toast {
+  position: fixed;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  background: #1e293b;
+  padding: 20px 40px;
+  border-radius: 12px;
+  box-shadow: 0 0 25px rgba(16,185,129,0.4);
+  display: none;
+  z-index: 1000;
+}
+.card { background:#1e293b; padding:1.5rem; border-radius:1rem; }
+</style>
+</head>
+
+<body class="text-white min-h-screen flex flex-col">
+
+<nav class="flex justify-between items-center px-6 py-4 bg-slate-900 shadow-lg">
+<h1 class="text-2xl font-bold text-emerald-400">Dashboard</h1>
+<button id="logoutBtn" class="bg-red-600 px-4 py-2 rounded hover:bg-red-700">Logout</button>
+</nav>
+
+<section class="flex-1 p-6 space-y-6">
+
+  <!-- BALANCES -->
+  <div class="grid md:grid-cols-2 gap-4">
+    <div class="card text-center">
+      <h3 class="text-xl font-semibold">Main Balance</h3>
+      <p id="mainBalance" class="text-2xl text-emerald-400">$0.00</p>
+    </div>
+    <div class="card text-center">
+      <h3 class="text-xl font-semibold">Locked Balance</h3>
+      <p id="lockedBalance" class="text-2xl text-yellow-400">$0.00</p>
+    </div>
+  </div>
+
+  <!-- NAVIGATION BUTTONS -->
+  <div class="grid grid-cols-3 gap-4">
+    <button onclick="location.href='deposit.html'" class="card hover:bg-emerald-600 font-semibold">Deposit</button>
+    <button onclick="location.href='withdraw.html'" class="card hover:bg-yellow-600 font-semibold">Withdraw</button>
+    <button onclick="location.href='investments.html'" class="card hover:bg-blue-600 font-semibold">Invest</button>
+  </div>
+
+  <!-- INVESTMENTS -->
+  <div>
+    <h3 class="text-xl font-semibold mb-2">Active Investments</h3>
+    <div id="activeInvestments" class="space-y-3"></div>
+  </div>
+
+  <div>
+    <h3 class="text-xl font-semibold mb-2">Matured Investments</h3>
+    <div id="maturedInvestments" class="space-y-3"></div>
+  </div>
+
+</section>
+
+<div id="toast" class="toast text-center"></div>
+
+<script type="module">
+import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
+import { getAuth, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js";
+import { getDatabase, ref, onValue, update } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-database.js";
+
+const firebaseConfig = {
+    apiKey: "AIzaSyDaEphuY2kQue8m-20DDs68JDgQirAycBE",
+    authDomain: "digital-wallet-40297.firebaseapp.com",
+    databaseURL: "https://digital-wallet-40297-default-rtdb.firebaseio.com",
+    projectId: "digital-wallet-40297",
+    storageBucket: "digital-wallet-40297.firebasestorage.app",
+    messagingSenderId: "953454788272",
+    appId: "1:953454788272:android:961fd704f587cf1b8c8575"
+};
+
+const app = initializeApp(firebaseConfig);
+const auth = getAuth(app);
+const db = getDatabase(app);
+
+let currentUser, userData;
+
+function showToast(msg, success=true){
+  const toast = document.getElementById("toast");
+  toast.innerText = msg;
+  toast.style.display = "block";
+  toast.style.border = success ? "2px solid #10b981" : "2px solid red";
+  setTimeout(()=> toast.style.display="none", 3000);
+}
+
+// LOGOUT
+document.getElementById("logoutBtn").addEventListener("click", ()=>{
+  signOut(auth).then(()=> window.location.href="login.html");
+});
+
+// AUTH CHECK
+onAuthStateChanged(auth, user=>{
+  if(user){
+    currentUser = user;
+    const userRef = ref(db, "users/"+user.uid);
+
+    onValue(userRef, snapshot=>{
+      if(snapshot.exists()){
+        userData = snapshot.val();
+        userData.mainBalance = userData.mainBalance || 0;
+        userData.lockedBalance = userData.lockedBalance || 0;
+        updateDashboard();
+      } else {
+        const defaultData = { mainBalance:0, lockedBalance:0, referralBalance:0, name:"User", email:user.email, country:"", phone:"", referralCode:"" };
+        update(userRef, defaultData).then(()=> {
+          userData = defaultData;
+          updateDashboard();
+        });
+      }
+    });
+
+  } else {
+    window.location.href = "login.html";
+  }
+});
+
+// UPDATE DASHBOARD AND HANDLE AUTO-MATURITY
+function updateDashboard(){
+  document.getElementById("mainBalance").innerText = `$${userData.mainBalance.toFixed(2)}`;
+  document.getElementById("lockedBalance").innerText = `$${userData.lockedBalance.toFixed(2)}`;
+
+  const activeContainer = document.getElementById("activeInvestments");
+  const maturedContainer = document.getElementById("maturedInvestments");
+  activeContainer.innerHTML = "";
+  maturedContainer.innerHTML = "";
+
+  const investmentsRef = ref(db, "investments/"+currentUser.uid);
+  onValue(investmentsRef, snap=>{
+    if(!snap.exists()) return;
+    const invData = snap.val();
+    let updatedMain = userData.mainBalance;
+    let updatedLocked = userData.lockedBalance;
+    const updates = {};
+
+    for(const key in invData){
+      const inv = invData[key];
+      const startTime = inv.startTime || 0;
+      const durationMs = parseDuration(inv.duration);
+      const matured = (Date.now() - startTime) >= durationMs;
+
+      if(matured && inv.status !== "matured"){
+        // Move to matured: update status and balances
+        inv.status = "matured";
+        const profit = ((inv.roi || 100)/100 * inv.amount) - inv.amount;
+        updatedMain += inv.amount + profit;
+        updatedLocked -= inv.amount;
+        updates[key] = { ...inv }; // update status in Firebase
+        showToast(`Investment ${inv.planName} matured! Profit: $${profit.toFixed(2)}`);
+      }
+
+      const html = `
+        <div class="card">
+          <p><strong>${inv.planName}</strong> - $${inv.amount}</p>
+          <p>ROI: ${inv.roi}% | Duration: ${inv.duration}</p>
+          <p>Status: ${inv.status || "active"} ${matured ? "| Profit: $"+(((inv.roi||100)/100*inv.amount)-inv.amount).toFixed(2) : ""}</p>
+        </div>
+      `;
+      if(matured) maturedContainer.innerHTML += html;
+      else activeContainer.innerHTML += html;
+    }
+
+    // Update balances in Firebase if any matured
+    if(Object.keys(updates).length > 0){
+      update(ref(db, "users/"+currentUser.uid), { mainBalance: updatedMain, lockedBalance: updatedLocked });
+      for(const k in updates){
+        update(ref(db, "investments/"+currentUser.uid+"/"+k), updates[k]);
+      }
+    }
+  });
+}
+
+// PARSE duration like "12h", "24h" into milliseconds
+function parseDuration(d){
+  if(!d) return 0;
+  const hours = parseInt(d.replace("h","")) || 0;
+  return hours*60*60*1000;
+}
+
+</script>
+</body>
+  </html>
