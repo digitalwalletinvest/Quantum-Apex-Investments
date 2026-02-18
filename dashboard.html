@@ -23,6 +23,7 @@ body { background:#0f172a; font-family: 'Inter', sans-serif; }
   box-shadow: 0 0 25px rgba(16,185,129,0.4);
   display: none;
   z-index: 1000;
+  text-align:center;
 }
 .card { background:#1e293b; padding:1.5rem; border-radius:1rem; }
 </style>
@@ -51,20 +52,20 @@ body { background:#0f172a; font-family: 'Inter', sans-serif; }
 
   <!-- NAVIGATION BUTTONS -->
   <div class="grid grid-cols-3 gap-4">
-    <button onclick="location.href='deposit.html'" class="card hover:bg-emerald-600 font-semibold">Deposit</button>
-    <button onclick="location.href='withdraw.html'" class="card hover:bg-yellow-600 font-semibold">Withdraw</button>
-    <button onclick="location.href='investments.html'" class="card hover:bg-blue-600 font-semibold">Invest</button>
+    <button onclick="location.href='deposit.html'" class="card hover:bg-green-700 font-semibold bg-green-600">Deposit</button>
+    <button onclick="location.href='withdraw.html'" class="card hover:bg-red-700 font-semibold bg-red-600">Withdraw</button>
+    <button onclick="location.href='investments.html'" class="card hover:bg-blue-700 font-semibold bg-blue-600">Invest</button>
   </div>
 
   <!-- INVESTMENTS -->
   <div>
     <h3 class="text-xl font-semibold mb-2">Active Investments</h3>
-    <div id="activeInvestments" class="space-y-3"></div>
+    <div id="activeInvestments" class="space-y-3">0</div>
   </div>
 
   <div>
     <h3 class="text-xl font-semibold mb-2">Matured Investments</h3>
-    <div id="maturedInvestments" class="space-y-3"></div>
+    <div id="maturedInvestments" class="space-y-3">0</div>
   </div>
 
 </section>
@@ -126,9 +127,7 @@ onAuthStateChanged(auth, user=>{
       }
     });
 
-  } else {
-    window.location.href = "login.html";
-  }
+  } else { window.location.href = "login.html"; }
 });
 
 // UPDATE DASHBOARD AND HANDLE AUTO-MATURITY
@@ -138,8 +137,8 @@ function updateDashboard(){
 
   const activeContainer = document.getElementById("activeInvestments");
   const maturedContainer = document.getElementById("maturedInvestments");
-  activeContainer.innerHTML = "";
-  maturedContainer.innerHTML = "";
+  activeContainer.innerHTML = "0";
+  maturedContainer.innerHTML = "0";
 
   const investmentsRef = ref(db, "investments/"+currentUser.uid);
   onValue(investmentsRef, snap=>{
@@ -148,6 +147,8 @@ function updateDashboard(){
     let updatedMain = userData.mainBalance;
     let updatedLocked = userData.lockedBalance;
     const updates = {};
+    activeContainer.innerHTML = "";
+    maturedContainer.innerHTML = "";
 
     for(const key in invData){
       const inv = invData[key];
@@ -156,12 +157,11 @@ function updateDashboard(){
       const matured = (Date.now() - startTime) >= durationMs;
 
       if(matured && inv.status !== "matured"){
-        // Move to matured: update status and balances
         inv.status = "matured";
         const profit = ((inv.roi || 100)/100 * inv.amount) - inv.amount;
         updatedMain += inv.amount + profit;
         updatedLocked -= inv.amount;
-        updates[key] = { ...inv }; // update status in Firebase
+        updates[key] = { ...inv };
         showToast(`Investment ${inv.planName} matured! Profit: $${profit.toFixed(2)}`);
       }
 
@@ -176,7 +176,6 @@ function updateDashboard(){
       else activeContainer.innerHTML += html;
     }
 
-    // Update balances in Firebase if any matured
     if(Object.keys(updates).length > 0){
       update(ref(db, "users/"+currentUser.uid), { mainBalance: updatedMain, lockedBalance: updatedLocked });
       for(const k in updates){
@@ -195,4 +194,4 @@ function parseDuration(d){
 
 </script>
 </body>
-  </html>
+</html>
