@@ -1,0 +1,107 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Withdraw - Quantum Apex</title>
+<script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-database.js"></script>
+<script src="https://cdn.tailwindcss.com"></script>
+<style>
+body { background:#0f172a; font-family: 'Inter', sans-serif; }
+.toast {
+  position: fixed; top:50%; left:50%;
+  transform:translate(-50%,-50%);
+  background:#1e293b; padding:20px 40px;
+  border-radius:12px; box-shadow:0 0 25px rgba(16,185,129,0.4);
+  display:none; z-index:1000;
+}
+</style>
+</head>
+<body class="text-white min-h-screen flex flex-col">
+
+<nav class="flex justify-between items-center px-6 py-4 bg-slate-900 shadow-lg">
+<h1 class="text-2xl font-bold text-emerald-400">Withdraw Funds</h1>
+<button onclick="window.location.href='dashboard.html'" class="bg-gray-600 px-4 py-2 rounded hover:bg-gray-700">Back</button>
+</nav>
+
+<section class="flex-1 p-6 space-y-6">
+
+<div class="bg-slate-800 p-6 rounded-2xl space-y-4">
+  <h2 class="text-xl font-semibold mb-2">Enter Withdrawal Amount</h2>
+  <input id="withdrawAmount" type="number" placeholder="Amount" class="w-full p-3 rounded bg-slate-700">
+  <button onclick="makeWithdraw()" class="w-full bg-yellow-500 py-3 rounded hover:bg-yellow-600 font-semibold">Withdraw Now</button>
+</div>
+
+<div class="bg-slate-800 p-6 rounded-2xl">
+  <h3 class="font-semibold mb-2">Your Current Balance</h3>
+  <p id="currentBalance" class="text-emerald-400 text-2xl">$0.00</p>
+</div>
+
+<div class="bg-slate-800 p-6 rounded-2xl">
+  <h3 class="font-semibold mb-2">Withdrawal Instructions</h3>
+  <p>Funds will be sent to your registered phone number. Ensure your mobile money account is active.</p>
+</div>
+
+</section>
+
+<div id="toast" class="toast text-center"></div>
+
+<script type="module">
+import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
+import { getAuth, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js";
+import { getDatabase, ref, onValue, update } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-database.js";
+
+const firebaseConfig = {
+    apiKey: "AIzaSyDaEphuY2kQue8m-20DDs68JDgQirAycBE",
+    authDomain: "digital-wallet-40297.firebaseapp.com",
+    databaseURL: "https://digital-wallet-40297-default-rtdb.firebaseio.com",
+    projectId: "digital-wallet-40297",
+    storageBucket: "digital-wallet-40297.firebasestorage.app",
+    messagingSenderId: "953454788272",
+    appId: "1:953454788272:android:961fd704f587cf1b8c8575"
+};
+
+const app = initializeApp(firebaseConfig);
+const auth = getAuth(app);
+const db = getDatabase(app);
+
+function showToast(msg, success=true){
+  const toast = document.getElementById("toast");
+  toast.innerText = msg;
+  toast.style.display="block";
+  toast.style.border = success ? "2px solid #10b981" : "2px solid red";
+  setTimeout(()=> toast.style.display="none",3000);
+}
+
+let currentUser, userData;
+
+onAuthStateChanged(auth, user=>{
+  if(user){
+    currentUser = user;
+    const userRef = ref(db, "users/"+user.uid);
+    onValue(userRef, snapshot=>{
+      if(snapshot.exists()){
+        userData = snapshot.val();
+        document.getElementById("currentBalance").innerText = `$${userData.mainBalance.toFixed(2)}`;
+      }
+    });
+  }else{ window.location.href="login.html"; }
+});
+
+window.makeWithdraw = async function(){
+  const amt = parseFloat(document.getElementById("withdrawAmount").value);
+  if(isNaN(amt) || amt <= 0){ showToast("Enter a valid amount", false); return; }
+  if(!userData || amt > userData.mainBalance){ showToast("Insufficient balance", false); return; }
+
+  const newBalance = userData.mainBalance - amt;
+  try{
+    await update(ref(db, "users/"+currentUser.uid), { mainBalance: newBalance });
+    showToast(`Withdrawal successful: $${amt}`);
+    document.getElementById("withdrawAmount").value = "";
+  }catch(err){ showToast("Withdrawal failed", false); }
+};
+</script>
+</body>
+</html>
