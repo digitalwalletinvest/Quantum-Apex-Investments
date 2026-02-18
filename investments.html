@@ -1,0 +1,193 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Investments - Quantum Apex</title>
+
+<script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-database.js"></script>
+<script src="https://cdn.tailwindcss.com"></script>
+
+<style>
+body { background:#0f172a; font-family: 'Inter', sans-serif; }
+.toast {
+  position: fixed;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  background: #1e293b;
+  padding: 20px 40px;
+  border-radius: 12px;
+  box-shadow: 0 0 25px rgba(16,185,129,0.4);
+  display: none;
+  z-index: 1000;
+}
+</style>
+</head>
+
+<body class="text-white min-h-screen flex flex-col">
+
+<!-- NAVBAR -->
+<nav class="flex justify-between items-center px-6 py-4 bg-slate-900 shadow-lg">
+<h1 class="text-2xl font-bold text-emerald-400">Investment Plans</h1>
+<button onclick="window.location.href='dashboard.html'" class="bg-gray-600 px-4 py-2 rounded hover:bg-gray-700">Back</button>
+</nav>
+
+<!-- INVESTMENT PLANS -->
+<section class="flex-1 p-6 space-y-6">
+  <div id="plansContainer" class="grid md:grid-cols-3 gap-4">
+    <!-- Plans dynamically injected here -->
+  </div>
+</section>
+
+<div id="toast" class="toast text-center"></div>
+
+<script type="module">
+import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
+import { getAuth, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js";
+import { getDatabase, ref, onValue, update, push } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-database.js";
+
+const firebaseConfig = {
+    apiKey: "AIzaSyDaEphuY2kQue8m-20DDs68JDgQirAycBE",
+    authDomain: "digital-wallet-40297.firebaseapp.com",
+    databaseURL: "https://digital-wallet-40297-default-rtdb.firebaseio.com",
+    projectId: "digital-wallet-40297",
+    storageBucket: "digital-wallet-40297.firebasestorage.app",
+    messagingSenderId: "953454788272",
+    appId: "1:953454788272:android:961fd704f587cf1b8c8575"
+};
+
+const app = initializeApp(firebaseConfig);
+const auth = getAuth(app);
+const db = getDatabase(app);
+
+function showToast(msg, success=true){
+  const toast = document.getElementById("toast");
+  toast.innerText = msg;
+  toast.style.display = "block";
+  toast.style.border = success ? "2px solid #10b981" : "2px solid red";
+  setTimeout(()=> toast.style.display="none", 3000);
+}
+
+// Investment Plans
+const plans = [
+  { name: "$20 Plan", min: 20, roi: 110, duration: "12h" },
+  { name: "$30 Plan", min: 30, roi: 115, duration: "12h" },
+  { name: "$50 Plan", min: 50, roi: 120, duration: "12h" },
+  { name: "$100 Plan", min: 100, roi: 125, duration: "24h" },
+  { name: "$200 Plan", min: 200, roi: 130, duration: "24h" },
+  { name: "$400 Plan", min: 400, roi: 135, duration: "24h" },
+  { name: "$600 Plan", min: 600, roi: 140, duration: "48h" },
+  { name: "$800 Plan", min: 800, roi: 145, duration: "48h" },
+  { name: "$1,000 Plan", min: 1000, roi: 150, duration: "48h" },
+  { name: "$5,000 Plan", min: 5000, roi: 160, duration: "72h" },
+  { name: "$10,000 Plan", min: 10000, roi: 170, duration: "72h" }
+];
+
+let currentUser, userData;
+
+// Auth & Realtime Data
+onAuthStateChanged(auth, user => {
+  if(user){
+    currentUser = user;
+    const userRef = ref(db, "users/"+user.uid);
+    onValue(userRef, snapshot => {
+      if(snapshot.exists()){
+        userData = snapshot.val();
+        userData.mainBalance = userData.mainBalance || 0;
+        userData.lockedBalance = userData.lockedBalance || 0;
+        renderPlans();
+      } else {
+        update(userRef, {
+          mainBalance: 0,
+          lockedBalance: 0,
+          referralBalance: 0,
+          name: "User",
+          email: user.email,
+          country: "",
+          phone: "",
+          referralCode: ""
+        }).then(() => {
+          userData = {
+            mainBalance: 0,
+            lockedBalance: 0,
+            referralBalance: 0,
+            name: "User",
+            email: user.email,
+            country: "",
+            phone: "",
+            referralCode: ""
+          };
+          renderPlans();
+        });
+      }
+    });
+  } else {
+    window.location.href = "login.html";
+  }
+});
+
+// Render Plans
+function renderPlans(){
+  if(!userData) return;
+  const container = document.getElementById("plansContainer");
+  container.innerHTML = "";
+
+  plans.forEach(plan => {
+    const planDiv = document.createElement("div");
+    planDiv.className = "bg-slate-800 p-6 rounded-2xl space-y-3 text-center";
+    planDiv.innerHTML = `
+      <h3 class="font-semibold text-xl">${plan.name}</h3>
+      <p>Minimum: $${plan.min}</p>
+      <p>ROI: ${plan.roi}%</p>
+      <p>Duration: ${plan.duration}</p>
+      <button class="bg-emerald-500 py-2 px-4 rounded hover:bg-emerald-600 font-semibold">Invest Now</button>
+    `;
+    const btn = planDiv.querySelector("button");
+    btn.addEventListener("click", ()=> invest(plan));
+    container.appendChild(planDiv);
+  });
+}
+
+// Investment Logic
+async function invest(plan){
+  if(userData.mainBalance < plan.min){
+    showToast("Insufficient balance", false);
+    return;
+  }
+
+  const investAmount = plan.min;
+  const newMain = userData.mainBalance - investAmount;
+  const newLocked = (userData.lockedBalance || 0) + investAmount;
+
+  try{
+    // Update balances
+    await update(ref(db, "users/"+currentUser.uid), {
+      mainBalance: newMain,
+      lockedBalance: newLocked
+    });
+
+    // Log investment
+    const investmentRef = ref(db, `investments/${currentUser.uid}`);
+    const newInvest = push(investmentRef);
+    await update(newInvest, {
+      planName: plan.name,
+      amount: investAmount,
+      roi: plan.roi,
+      status: "active",
+      startTime: Date.now(),
+      duration: plan.duration
+    });
+
+    showToast(`Invested $${investAmount} in ${plan.name}`);
+  }catch(err){
+    console.error(err);
+    showToast("Investment failed", false);
+  }
+}
+
+</script>
+</body>
+  </html>
