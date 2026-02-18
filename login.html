@@ -1,0 +1,84 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Login - Quantum Apex</title>
+
+<script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js"></script>
+<script src="https://cdn.tailwindcss.com"></script>
+
+<style>
+body { background:#0f172a; }
+.toast {
+  position: fixed;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  background: #1e293b;
+  padding: 20px 40px;
+  border-radius: 12px;
+  box-shadow: 0 0 25px rgba(16,185,129,0.4);
+  display: none;
+}
+</style>
+</head>
+
+<body class="flex items-center justify-center min-h-screen text-white">
+
+<div class="bg-slate-800 p-8 rounded-2xl w-full max-w-md">
+<h2 class="text-2xl font-bold mb-6 text-center text-emerald-400">Login</h2>
+
+<input id="email" type="email" placeholder="Email" class="w-full mb-3 p-3 rounded bg-slate-700">
+<input id="password" type="password" placeholder="Password" class="w-full mb-4 p-3 rounded bg-slate-700">
+
+<button onclick="login()" class="w-full bg-emerald-500 py-3 rounded hover:bg-emerald-600">
+Login
+</button>
+
+<p class="text-center mt-4 text-gray-400">
+Don't have account? <a href="register.html" class="text-emerald-400">Register</a>
+</p>
+</div>
+
+<div id="toast" class="toast text-center"></div>
+
+<script type="module">
+
+import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
+import { getAuth, signInWithEmailAndPassword } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js";
+
+const firebaseConfig = {
+    apiKey: "AIzaSyDaEphuY2kQue8m-20DDs68JDgQirAycBE",
+    authDomain: "digital-wallet-40297.firebaseapp.com",
+    projectId: "digital-wallet-40297",
+    storageBucket: "digital-wallet-40297.firebasestorage.app",
+    messagingSenderId: "953454788272",
+    appId: "1:953454788272:android:961fd704f587cf1b8c8575"
+};
+
+const app = initializeApp(firebaseConfig);
+const auth = getAuth(app);
+
+function showToast(message, success=true) {
+  const toast = document.getElementById("toast");
+  toast.innerText = message;
+  toast.style.display = "block";
+  toast.style.border = success ? "2px solid #10b981" : "2px solid red";
+  setTimeout(() => { toast.style.display = "none"; }, 3000);
+}
+
+window.login = async function(){
+  try{
+    await signInWithEmailAndPassword(auth, email.value, password.value);
+    showToast("Login Successful");
+    setTimeout(()=> window.location.href="dashboard.html",1500);
+  }catch(error){
+    showToast(error.message,false);
+  }
+}
+
+</script>
+</body>
+</html>
