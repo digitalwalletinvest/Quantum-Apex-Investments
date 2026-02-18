@@ -1,0 +1,155 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Register - Quantum Apex</title>
+
+<script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-database.js"></script>
+<script src="https://cdn.tailwindcss.com"></script>
+
+<style>
+body { background:#0f172a; }
+.toast {
+  position: fixed;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  background: #1e293b;
+  padding: 20px 40px;
+  border-radius: 12px;
+  box-shadow: 0 0 25px rgba(16,185,129,0.4);
+  display: none;
+  z-index: 1000;
+}
+</style>
+</head>
+
+<body class="flex items-center justify-center min-h-screen text-white">
+
+<div class="bg-slate-800 p-8 rounded-2xl w-full max-w-md">
+<h2 class="text-2xl font-bold mb-6 text-center text-emerald-400">Create Account</h2>
+
+<input id="name" type="text" placeholder="Full Name" class="w-full mb-3 p-3 rounded bg-slate-700">
+<input id="email" type="email" placeholder="Email" class="w-full mb-3 p-3 rounded bg-slate-700">
+<input id="phone" type="text" placeholder="Phone Number" class="w-full mb-3 p-3 rounded bg-slate-700">
+
+<select id="country" class="w-full mb-3 p-3 rounded bg-slate-700">
+<option value="">Select Country</option>
+<option>Kenya</option>
+<option>Uganda</option>
+<option>Tanzania</option>
+<option>Rwanda</option>
+<option>Zambia</option>
+<option>Zimbabwe</option>
+<option>Botswana</option>
+<option>South Africa</option>
+<option>Mozambique</option>
+<option>Ethiopia</option>
+<option>South Sudan</option>
+<option>Nageria</option>
+<option>France </option>
+<option>United Kingdom</option>
+</select>
+
+<input id="password" type="password" placeholder="Password" class="w-full mb-3 p-3 rounded bg-slate-700">
+<input id="confirmPassword" type="password" placeholder="Confirm Password" class="w-full mb-3 p-3 rounded bg-slate-700">
+<input id="referral" type="text" placeholder="Referral Code (Optional)" class="w-full mb-4 p-3 rounded bg-slate-700">
+
+<button onclick="register()" class="w-full bg-emerald-500 py-3 rounded hover:bg-emerald-600">
+Register
+</button>
+
+<p class="text-center mt-4 text-gray-400">
+Already have account? <a href="login.html" class="text-emerald-400">Login</a>
+</p>
+</div>
+
+<div id="toast" class="toast text-center"></div>
+
+<script type="module">
+
+import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
+import { getAuth, createUserWithEmailAndPassword } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js";
+import { getDatabase, ref, set, get } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-database.js";
+
+const firebaseConfig = {
+    apiKey: "AIzaSyDaEphuY2kQue8m-20DDs68JDgQirAycBE",
+    authDomain: "digital-wallet-40297.firebaseapp.com",
+    databaseURL: "https://digital-wallet-40297-default-rtdb.firebaseio.com",
+    projectId: "digital-wallet-40297",
+    storageBucket: "digital-wallet-40297.firebasestorage.app",
+    messagingSenderId: "953454788272",
+    appId: "1:953454788272:android:961fd704f587cf1b8c8575"
+};
+
+const app = initializeApp(firebaseConfig);
+const auth = getAuth(app);
+const db = getDatabase(app);
+
+function showToast(message, success=true) {
+  const toast = document.getElementById("toast");
+  toast.innerText = message;
+  toast.style.display = "block";
+  toast.style.border = success ? "2px solid #10b981" : "2px solid red";
+  setTimeout(() => { toast.style.display = "none"; }, 3000);
+}
+
+window.register = async function() {
+
+  const name = name.value.trim();
+  const email = email.value.trim();
+  const phone = phone.value.trim();
+  const country = country.value;
+  const password = password.value;
+  const confirmPassword = confirmPassword.value;
+  const referral = referral.value.trim();
+
+  if(password !== confirmPassword){
+    showToast("Passwords do not match", false);
+    return;
+  }
+
+  try {
+    const userCred = await createUserWithEmailAndPassword(auth, email, password);
+    const user = userCred.user;
+
+    let referredBy = null;
+
+    if(referral){
+      const refCheck = await get(ref(db, "users/" + referral));
+      if(refCheck.exists()){
+        referredBy = referral;
+      }
+    }
+
+    await set(ref(db, "users/" + user.uid), {
+      uid: user.uid,
+      name: name,
+      email: email,
+      phone: phone,
+      country: country,
+      mainBalance: 0,
+      lockedBalance: 0,
+      referralBalance: 0,
+      totalDeposited: 0,
+      totalProfit: 0,
+      totalWithdrawn: 0,
+      referralCode: user.uid,
+      referredBy: referredBy,
+      createdAt: Date.now()
+    });
+
+    showToast("Account Created Successfully");
+    setTimeout(()=> window.location.href="dashboard.html",1500);
+
+  } catch(error){
+    showToast(error.message, false);
+  }
+}
+
+</script>
+</body>
+  </html>
