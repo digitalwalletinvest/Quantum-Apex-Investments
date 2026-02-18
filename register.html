@@ -23,6 +23,7 @@ body { background:#0f172a; }
   box-shadow: 0 0 25px rgba(16,185,129,0.4);
   display: none;
   z-index: 1000;
+  text-align:center;
 }
 </style>
 </head>
@@ -49,8 +50,8 @@ body { background:#0f172a; }
 <option>Mozambique</option>
 <option>Ethiopia</option>
 <option>South Sudan</option>
-<option>Nageria</option>
-<option>France </option>
+<option>Nigeria</option>
+<option>France</option>
 <option>United Kingdom</option>
 </select>
 
@@ -58,7 +59,7 @@ body { background:#0f172a; }
 <input id="confirmPassword" type="password" placeholder="Confirm Password" class="w-full mb-3 p-3 rounded bg-slate-700">
 <input id="referral" type="text" placeholder="Referral Code (Optional)" class="w-full mb-4 p-3 rounded bg-slate-700">
 
-<button onclick="register()" class="w-full bg-emerald-500 py-3 rounded hover:bg-emerald-600">
+<button onclick="register()" class="w-full bg-emerald-500 py-3 rounded hover:bg-emerald-600 font-semibold">
 Register
 </button>
 
@@ -67,7 +68,7 @@ Already have account? <a href="login.html" class="text-emerald-400">Login</a>
 </p>
 </div>
 
-<div id="toast" class="toast text-center"></div>
+<div id="toast" class="toast"></div>
 
 <script type="module">
 
@@ -99,38 +100,44 @@ function showToast(message, success=true) {
 
 window.register = async function() {
 
-  const name = name.value.trim();
-  const email = email.value.trim();
-  const phone = phone.value.trim();
-  const country = country.value;
-  const password = password.value;
-  const confirmPassword = confirmPassword.value;
-  const referral = referral.value.trim();
+  const nameVal = document.getElementById("name").value.trim();
+  const emailVal = document.getElementById("email").value.trim();
+  const phoneVal = document.getElementById("phone").value.trim();
+  const countryVal = document.getElementById("country").value;
+  const passwordVal = document.getElementById("password").value;
+  const confirmPasswordVal = document.getElementById("confirmPassword").value;
+  const referralVal = document.getElementById("referral").value.trim();
 
-  if(password !== confirmPassword){
+  // Validate required fields
+  if(!nameVal || !emailVal || !phoneVal || !countryVal || !passwordVal || !confirmPasswordVal){
+    showToast("Please fill in all required fields", false);
+    return;
+  }
+
+  if(passwordVal !== confirmPasswordVal){
     showToast("Passwords do not match", false);
     return;
   }
 
   try {
-    const userCred = await createUserWithEmailAndPassword(auth, email, password);
+    const userCred = await createUserWithEmailAndPassword(auth, emailVal, passwordVal);
     const user = userCred.user;
 
     let referredBy = null;
 
-    if(referral){
-      const refCheck = await get(ref(db, "users/" + referral));
+    if(referralVal){
+      const refCheck = await get(ref(db, "users/" + referralVal));
       if(refCheck.exists()){
-        referredBy = referral;
+        referredBy = referralVal;
       }
     }
 
     await set(ref(db, "users/" + user.uid), {
       uid: user.uid,
-      name: name,
-      email: email,
-      phone: phone,
-      country: country,
+      name: nameVal,
+      email: emailVal,
+      phone: phoneVal,
+      country: countryVal,
       mainBalance: 0,
       lockedBalance: 0,
       referralBalance: 0,
@@ -152,4 +159,4 @@ window.register = async function() {
 
 </script>
 </body>
-  </html>
+</html>
