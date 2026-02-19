@@ -26,8 +26,9 @@ button { cursor:pointer; border:none; }
 .plan-card:hover { background:#334155; transform:translateY(-3px); }
 .plan-info { display:flex; flex-direction:column; gap:0.5rem; }
 .trade-btn { background:#16a34a; color:white; padding:0.8rem 1.5rem; border-radius:8px; font-weight:bold; transition:background 0.2s; width:100%; margin-top:0.8rem; }
+.trade-btn.disabled { background:#555; cursor:not-allowed; }
 .trade-btn.active { background:#0ea5e9; }
-.trade-btn:hover:not(.active) { background:#15803d; }
+.trade-btn:hover:not(.active):not(.disabled) { background:#15803d; }
 .countdown { font-weight:bold; color:#10b981; margin-top:0.5rem; }
 </style>
 </head>
@@ -37,7 +38,6 @@ button { cursor:pointer; border:none; }
 <div class="notification" id="notification"></div>
 
 <div class="container">
-  <!-- Robot Info Card -->
   <div class="card">
     <div class="section-title">
       <span style="font-size:2rem;">🤖</span> Quantum Apex Robot
@@ -53,14 +53,13 @@ button { cursor:pointer; border:none; }
     <button id="purchaseRobot" class="purchase-btn">Purchase Robot 🤖</button>
   </div>
 
-  <!-- Trading Plans Grid -->
   <div id="plansContainer" class="plan-grid"></div>
 </div>
 
 <script type="module">
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
 import { getAuth, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js";
-import { getDatabase, ref, set, push, get, update } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-database.js";
+import { getDatabase, ref, set, push, get, update, onValue } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-database.js";
 
 const app = initializeApp({
   apiKey:"AIzaSyDaEphuY2kQue8m-20DDs68JDgQirAycBE",
@@ -77,7 +76,7 @@ const plansContainer = document.getElementById("plansContainer");
 const notification = document.getElementById("notification");
 const userBalanceEl = document.getElementById("userBalance");
 
-function showNotification(msg) {
+function showNotification(msg){
   notification.innerText = msg;
   notification.style.display = "block";
   const hide = () => { notification.style.display="none"; document.removeEventListener("click", hide); };
@@ -100,7 +99,9 @@ const plans = [
 
 onAuthStateChanged(auth, async user => {
   if(!user) location.href="login.html";
+
   const userRef = ref(db,"users/"+user.uid);
+  const payoutsRef = ref(db,"payouts/"+user.uid);
 
   const getLatestUserData = async () => {
     const snap = await get(userRef);
@@ -113,23 +114,7 @@ onAuthStateChanged(auth, async user => {
     return latest;
   };
 
-  // Purchase Robot
-  purchaseBtn.onclick = async () => {
-    const latest = await refreshBalance();
-    if(latest.robotPurchased){
-      showNotification("Robot already active!");
-      return;
-    }
-    if(!latest.mainBalance || latest.mainBalance < 150){
-      showNotification("Insufficient balance!");
-      return;
-    }
-    await update(userRef, { mainBalance: latest.mainBalance - 150, robotPurchased: true });
-    showNotification("Robot purchased successfully!");
-    refreshBalance();
-  };
-
-  // Render trading plans
+  // Render plan cards
   plans.forEach(plan => {
     const planDiv = document.createElement("div");
     planDiv.className = "plan-card";
@@ -143,56 +128,100 @@ onAuthStateChanged(auth, async user => {
         <span>Invest $${plan.price} → Earn $${plan.payout} in ${plan.days} days</span>
         <span class="countdown" id="${countdownId}"></span>
       </div>
-      <button class="trade-btn" id="${tradeBtnId}">Trade Now</button>
+      <button class="trade-btn disabled" id="${tradeBtnId}">Trade Now</button>
     `;
     plansContainer.appendChild(planDiv);
+  });
 
-    const tradeBtn = document.getElementById(tradeBtnId);
-    const countdownEl = document.getElementById(countdownId);
+  const tradeButtons = {};
+  const countdownElements = {};
+  plans.forEach(plan => {
+    tradeButtons[plan.pair] = document.getElementById(`trade-${plan.pair}`);
+    countdownElements[plan.pair] = document.getElementById(`countdown-${plan.pair}`);
+  });
 
-    const startCountdown = (maturityTime) => {
-      tradeBtn.innerText = "Robot trading now ✅";
-      tradeBtn.classList.add("active");
-      const interval = setInterval(() => {
-        const now = Date.now();
-        const remaining = maturityTime - now;
-        if(remaining <= 0){
-          countdownEl.innerText = "Trade complete ✅";
-          clearInterval(interval);
-        } else {
-          const d = Math.floor(remaining/(1000*60*60*24));
-          const h = Math.floor((remaining%(1000*60*60*24))/(1000*60*60));
-          const m = Math.floor((remaining%(1000*60*60))/(1000*60));
-          const s = Math.floor((remaining%(1000*60))/1000);
-          countdownEl.innerText = `${d}d ${h}h ${m}m ${s}s remaining`;
-        }
-      },1000);
-    };
+  const startCountdown = (pair, maturityTime) => {
+    const tradeBtn = tradeButtons[pair];
+    const countdownEl = countdownElements[pair];
+    tradeBtn.innerText = "Robot trading now ✅";
+    tradeBtn.classList.add("active");
+    tradeBtn.classList.remove("disabled");
 
+    const interval = setInterval(() => {
+      const now = Date.now();
+      const remaining = maturityTime - now;
+      if(remaining <= 0){
+        countdownEl.innerText = "Trade complete ✅";
+        tradeBtn.classList.remove("active");
+        clearInterval(interval);
+      } else {
+        const d = Math.floor(remaining/(1000*60*60*24));
+        const h = Math.floor((remaining%(1000*60*60*24))/(1000*60*60));
+        const m = Math.floor((remaining%(1000*60*60))/(1000*60));
+        const s = Math.floor((remaining%(1000*60))/1000);
+        countdownEl.innerText = `${d}d ${h}h ${m}m ${s}s remaining`;
+      }
+    },1000);
+  };
+
+  // Resume active trades on page load
+  const payoutsSnap = await get(payoutsRef);
+  if(payoutsSnap.exists()){
+    Object.values(payoutsSnap.val()).forEach(p => {
+      if(!p.claimed){
+        startCountdown(p.pair, p.maturity);
+      }
+    });
+  }
+
+  // Setup trade buttons
+  plans.forEach(plan => {
+    const tradeBtn = tradeButtons[plan.pair];
     tradeBtn.onclick = async () => {
       const latest = await refreshBalance();
+      if(!latest.robotPurchased){
+        showNotification("You must purchase the robot first!");
+        return;
+      }
       if(!latest.mainBalance || latest.mainBalance < plan.price){
         showNotification("Insufficient balance!");
         return;
       }
 
-      await update(userRef, { mainBalance: latest.mainBalance - plan.price });
       const maturityTime = Date.now() + plan.days*24*60*60*1000;
-      const payoutRef = push(ref(db,"payouts/"+user.uid));
+      const payoutRef = push(payoutsRef);
       await set(payoutRef, { amount: plan.payout, maturity: maturityTime, pair: plan.pair, claimed:false });
+      await update(userRef, { mainBalance: latest.mainBalance - plan.price });
 
-      startCountdown(maturityTime);
+      startCountdown(plan.pair, maturityTime);
       showNotification(`Trading started for ${plan.pair}!`);
-      refreshBalance();
     };
   });
 
-  // Auto-claim payouts
+  // Purchase robot
+  purchaseBtn.onclick = async () => {
+    const latest = await refreshBalance();
+    if(latest.robotPurchased){
+      showNotification("Robot already active!");
+      return;
+    }
+    if(!latest.mainBalance || latest.mainBalance < 150){
+      showNotification("Insufficient balance!");
+      return;
+    }
+    await update(userRef, { mainBalance: latest.mainBalance - 150, robotPurchased: true });
+    showNotification("Robot purchased successfully!");
+    refreshBalance();
+
+    // Enable trade buttons
+    Object.values(tradeButtons).forEach(btn => btn.classList.remove("disabled"));
+  };
+
+  // Auto-claim payouts every 5s
   setInterval(async () => {
-    const payoutsSnap = await get(ref(db,"payouts/"+user.uid));
+    const payoutsSnap = await get(payoutsRef);
     if(!payoutsSnap.exists()) return;
-    const payouts = payoutsSnap.val();
-    for(const [key,p] of Object.entries(payouts)){
+    for(const [key,p] of Object.entries(payoutsSnap.val())){
       if(!p.claimed && Date.now() >= p.maturity){
         const latest = await get(userRef);
         const currentBalance = latest.val().mainBalance || 0;
