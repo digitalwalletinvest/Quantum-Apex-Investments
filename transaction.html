@@ -1,0 +1,167 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Transactions - Quantum Apex</title>
+
+<script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-database.js"></script>
+<script src="https://cdn.tailwindcss.com"></script>
+
+<style>
+body { background:#0f172a; font-family:Inter,sans-serif; color:white; }
+.container { max-width:900px; margin:2rem auto; padding:2rem; background:#1e293b; border-radius:14px; }
+h2 { text-align:center; margin-bottom:1.5rem; color:#10b981; font-weight:bold; font-size:2rem; }
+.section-title { font-size:16px; font-weight:bold; color:#94a3b8; margin-top:1rem; margin-bottom:0.5rem; }
+.table { width:100%; border-collapse: collapse; }
+.table th, .table td { padding:0.75rem; text-align:left; border-bottom:1px solid #334155; }
+.status-success { color:#22c55e; font-weight:bold; }
+.status-failed { color:#ef4444; font-weight:bold; }
+.toast {
+  position: fixed;
+  bottom: 2rem;
+  left: 50%;
+  transform: translateX(-50%);
+  background:#1e293b;
+  padding: 15px 30px;
+  border-radius: 12px;
+  box-shadow: 0 0 20px rgba(16,185,129,0.5);
+  display:none;
+  font-weight:bold;
+  color:white;
+  z-index: 1000;
+}
+</style>
+</head>
+
+<body>
+
+<div class="container">
+  <h2>Transaction History</h2>
+
+  <!-- Deposits -->
+  <div>
+    <div class="section-title">Deposits</div>
+    <table class="table">
+      <thead>
+        <tr>
+          <th>Date & Time</th>
+          <th>Amount</th>
+          <th>Method</th>
+          <th>Status</th>
+        </tr>
+      </thead>
+      <tbody id="depositTable">
+        <tr><td colspan="4" class="text-center text-slate-400">Loading...</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <!-- Withdrawals -->
+  <div>
+    <div class="section-title">Withdrawals</div>
+    <table class="table">
+      <thead>
+        <tr>
+          <th>Date & Time</th>
+          <th>Amount</th>
+          <th>Method</th>
+          <th>Status</th>
+        </tr>
+      </thead>
+      <tbody id="withdrawTable">
+        <tr><td colspan="4" class="text-center text-slate-400">Loading...</td></tr>
+      </tbody>
+    </table>
+  </div>
+</div>
+
+<div id="toast" class="toast"></div>
+
+<script type="module">
+import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
+import { getAuth, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js";
+import { getDatabase, ref, onValue } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-database.js";
+
+// Firebase config
+const app = initializeApp({
+  apiKey:"AIzaSyDaEphuY2kQue8m-20DDs68JDgQirAycBE",
+  authDomain:"digital-wallet-40297.firebaseapp.com",
+  databaseURL:"https://digital-wallet-40297-default-rtdb.europe-west1.firebasedatabase.app",
+  projectId:"digital-wallet-40297"
+});
+
+const auth = getAuth(app);
+const db = getDatabase(app);
+
+const depositTable = document.getElementById("depositTable");
+const withdrawTable = document.getElementById("withdrawTable");
+const toast = document.getElementById("toast");
+
+// Toast function
+function showToast(msg, success=true){
+  toast.innerText = msg;
+  toast.style.display = "block";
+  toast.style.color = success ? "#10b981" : "#ef4444";
+  setTimeout(()=>{ toast.style.display="none"; }, 3000);
+}
+
+// Format timestamp
+function formatDate(timestamp){
+  const date = new Date(timestamp);
+  return date.toLocaleString();
+}
+
+// Real-time sync
+onAuthStateChanged(auth, user => {
+  if(!user) location.href="login.html";
+
+  // Listen to deposits
+  const depositsRef = ref(db, "deposits/" + user.uid);
+  onValue(depositsRef, snapshot => {
+    depositTable.innerHTML = "";
+    if(!snapshot.exists()){
+      depositTable.innerHTML = `<tr><td colspan="4" class="text-center text-slate-400">No transactions yet</td></tr>`;
+      return;
+    }
+    const data = snapshot.val();
+    Object.values(data).sort((a,b)=>b.timestamp - a.timestamp).forEach(d => {
+      const method = ['Mukuru','Mobile Money','Crypto'].includes(d.method) ? d.method : 'N/A';
+      depositTable.innerHTML += `
+        <tr>
+          <td>${formatDate(d.timestamp)}</td>
+          <td>$${d.amount.toFixed(2)}</td>
+          <td>${method}</td>
+          <td class="${d.status==='Success'?'status-success':'status-failed'}">${d.status}</td>
+        </tr>
+      `;
+    });
+  });
+
+  // Listen to withdrawals
+  const withdrawRef = ref(db, "withdrawals/" + user.uid);
+  onValue(withdrawRef, snapshot => {
+    withdrawTable.innerHTML = "";
+    if(!snapshot.exists()){
+      withdrawTable.innerHTML = `<tr><td colspan="4" class="text-center text-slate-400">No transactions yet</td></tr>`;
+      return;
+    }
+    const data = snapshot.val();
+    Object.values(data).sort((a,b)=>b.timestamp - a.timestamp).forEach(d => {
+      const method = ['Mukuru','Mobile Money','Crypto'].includes(d.method) ? d.method : 'N/A';
+      withdrawTable.innerHTML += `
+        <tr>
+          <td>${formatDate(d.timestamp)}</td>
+          <td>$${d.amount.toFixed(2)}</td>
+          <td>${method}</td>
+          <td class="${d.status==='Success'?'status-success':'status-failed'}">${d.status}</td>
+        </tr>
+      `;
+    });
+  });
+});
+</script>
+</body>
+  </html>
