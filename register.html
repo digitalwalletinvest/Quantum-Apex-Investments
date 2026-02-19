@@ -24,6 +24,8 @@ body { background:#0f172a; }
   display: none;
   z-index: 1000;
   text-align:center;
+  font-weight:bold;
+  color:white;
 }
 </style>
 </head>
@@ -59,7 +61,7 @@ body { background:#0f172a; }
 <input id="confirmPassword" type="password" placeholder="Confirm Password" class="w-full mb-3 p-3 rounded bg-slate-700">
 <input id="referral" type="text" placeholder="Referral Code (Optional)" class="w-full mb-4 p-3 rounded bg-slate-700">
 
-<button onclick="register()" class="w-full bg-emerald-500 py-3 rounded hover:bg-emerald-600 font-semibold">
+<button id="registerBtn" class="w-full bg-emerald-500 py-3 rounded hover:bg-emerald-600 font-semibold">
 Register
 </button>
 
@@ -71,21 +73,19 @@ Already have account? <a href="login.html" class="text-emerald-400">Login</a>
 <div id="toast" class="toast"></div>
 
 <script type="module">
-
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
 import { getAuth, createUserWithEmailAndPassword } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js";
 import { getDatabase, ref, set, get } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-database.js";
 
 const firebaseConfig = {
-    apiKey: "AIzaSyDaEphuY2kQue8m-20DDs68JDgQirAycBE",
-    authDomain: "digital-wallet-40297.firebaseapp.com",
-    databaseURL: "https://digital-wallet-40297-default-rtdb.firebaseio.com",
-    projectId: "digital-wallet-40297",
-    storageBucket: "digital-wallet-40297.firebasestorage.app",
-    messagingSenderId: "953454788272",
-    appId: "1:953454788272:android:961fd704f587cf1b8c8575"
+  apiKey: "AIzaSyDaEphuY2kQue8m-20DDs68JDgQirAycBE",
+  authDomain: "digital-wallet-40297.firebaseapp.com",
+  databaseURL: "https://digital-wallet-40297-default-rtdb.europe-west1.firebasedatabase.app",
+  projectId: "digital-wallet-40297",
+  storageBucket: "digital-wallet-40297.firebasestorage.app",
+  messagingSenderId: "953454788272",
+  appId: "1:953454788272:android:961fd704f587cf1b8c8575"
 };
-
 const app = initializeApp(firebaseConfig);
 const auth = getAuth(app);
 const db = getDatabase(app);
@@ -95,11 +95,11 @@ function showToast(message, success=true) {
   toast.innerText = message;
   toast.style.display = "block";
   toast.style.border = success ? "2px solid #10b981" : "2px solid red";
+  toast.style.color = success ? "#10b981" : "#ef4444";
   setTimeout(() => { toast.style.display = "none"; }, 3000);
 }
 
-window.register = async function() {
-
+document.getElementById("registerBtn").addEventListener("click", async () => {
   const nameVal = document.getElementById("name").value.trim();
   const emailVal = document.getElementById("email").value.trim();
   const phoneVal = document.getElementById("phone").value.trim();
@@ -108,7 +108,6 @@ window.register = async function() {
   const confirmPasswordVal = document.getElementById("confirmPassword").value;
   const referralVal = document.getElementById("referral").value.trim();
 
-  // Validate required fields
   if(!nameVal || !emailVal || !phoneVal || !countryVal || !passwordVal || !confirmPasswordVal){
     showToast("Please fill in all required fields", false);
     return;
@@ -124,12 +123,9 @@ window.register = async function() {
     const user = userCred.user;
 
     let referredBy = null;
-
     if(referralVal){
       const refCheck = await get(ref(db, "users/" + referralVal));
-      if(refCheck.exists()){
-        referredBy = referralVal;
-      }
+      if(refCheck.exists()) referredBy = referralVal;
     }
 
     await set(ref(db, "users/" + user.uid), {
@@ -149,14 +145,19 @@ window.register = async function() {
       createdAt: Date.now()
     });
 
+    // ✅ Show success immediately and redirect
     showToast("Account Created Successfully");
-    setTimeout(()=> window.location.href="dashboard.html",1500);
+    setTimeout(() => window.location.href="dashboard.html", 1500);
 
-  } catch(error){
-    showToast(error.message, false);
+  } catch (error) {
+    const firebaseErrors = {
+      "auth/email-already-in-use": "Email already exists",
+      "auth/invalid-email": "Invalid email address",
+      "auth/weak-password": "Password too weak"
+    };
+    showToast(firebaseErrors[error.code] || "Registration failed", false);
   }
-}
-
+});
 </script>
 </body>
 </html>
