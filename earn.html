@@ -1,0 +1,313 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Quantum Apex Robot - Quantum Apex</title>
+
+<!-- Firebase SDKs -->
+<script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-database.js"></script>
+
+<style>
+body {
+  margin: 0;
+  font-family: Arial, sans-serif;
+  background: #0f172a;
+  color: white;
+}
+.container {
+  max-width: 900px;
+  margin: 0 auto;
+  padding: 1rem;
+}
+.card {
+  background: #1e293b;
+  border-radius: 16px;
+  padding: 2rem;
+  margin-bottom: 1.5rem;
+  box-shadow: 0 4px 10px rgba(0,0,0,0.3);
+  transition: transform 0.2s, box-shadow 0.2s;
+}
+.card:hover {
+  transform: translateY(-4px);
+  box-shadow: 0 8px 20px rgba(0,0,0,0.5);
+}
+.section-title {
+  font-size: 20px;
+  font-weight: bold;
+  color: #94a3b8;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+button {
+  cursor: pointer;
+  border: none;
+}
+.back-btn {
+  position: fixed;
+  top: 1rem;
+  right: 1rem;
+  background: #ef4444;
+  color: white;
+  padding: 0.6rem 1.2rem;
+  border-radius: 8px;
+  font-weight: bold;
+}
+.plan-card {
+  background: #1e293b;
+  border-radius: 16px;
+  padding: 1.5rem;
+  margin-top: 1.5rem;
+  display: flex;
+  flex-direction: row;
+  justify-content: space-between;
+  align-items: center;
+  flex-wrap: wrap;
+  transition: background 0.2s;
+  width: 100%;
+  box-sizing: border-box;
+}
+.plan-card:hover {
+  background: #334155;
+}
+.plan-info {
+  display: flex;
+  flex-direction: column;
+  flex: 1 1 60%;
+  min-width: 220px;
+}
+.notification {
+  position: fixed;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%,-50%);
+  background: #1e293b;
+  padding: 1rem 2rem;
+  border-radius: 12px;
+  font-weight: bold;
+  color: #facc15;
+  display: none;
+  z-index: 1000;
+  text-align: center;
+  box-shadow: 0 4px 15px rgba(0,0,0,0.4);
+}
+.countdown {
+  font-weight: bold;
+  color: #10b981;
+  margin-top: 0.5rem;
+}
+.purchase-btn {
+  background: #2563eb;
+  color: white;
+  padding: 0.6rem 1.2rem;
+  border-radius: 8px;
+  font-weight: bold;
+  transition: background 0.2s;
+}
+.purchase-btn:hover {
+  background: #1d4ed8;
+}
+.trade-btn {
+  background: #16a34a;
+  color: white;
+  padding: 0.8rem 1.5rem;
+  border-radius: 8px;
+  font-weight: bold;
+  transition: background 0.2s;
+  flex: 1 1 30%;
+  min-width: 120px;
+  margin-top: 0.5rem;
+}
+.trade-btn.active {
+  background: #0ea5e9;
+}
+.trade-btn:hover:not(.active) {
+  background: #15803d;
+}
+.balance {
+  margin-top: 0.5rem;
+  font-weight: bold;
+  color: #f59e0b;
+}
+</style>
+</head>
+
+<body>
+<button class="back-btn" onclick="location.href='dashboard.html'">Back</button>
+<div class="notification" id="notification"></div>
+
+<div class="container">
+  <!-- Robot Info Card -->
+  <div class="card">
+    <div class="section-title">
+      <span style="font-size: 2rem;">🤖</span> Quantum Apex Robot
+    </div>
+    <p style="margin-top: 1rem; color: #cbd5e1;">
+      AI-powered trading system for <strong>Bitcoin</strong>, <strong>Forex</strong>, <strong>Binary</strong> markets. Executes trades automatically.
+    </p>
+    <p style="margin-top: 0.5rem; color: #cbd5e1;">
+      <strong>Price:</strong> $150 <br>
+      <strong style="color:#22c55e;">Up to 200% ROI in 7 days</strong>
+    </p>
+    <p class="balance" id="userBalance">Balance: $0</p>
+    <button id="purchaseRobot" class="purchase-btn">Purchase Robot 🤖</button>
+  </div>
+
+  <!-- Trading Plans -->
+  <div id="plansContainer"></div>
+</div>
+
+<script type="module">
+import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
+import { getAuth, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js";
+import { getDatabase, ref, onValue, set, push, get, update } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-database.js";
+
+const app = initializeApp({
+  apiKey:"AIzaSyDaEphuY2kQue8m-20DDs68JDgQirAycBE",
+  authDomain:"digital-wallet-40297.firebaseapp.com",
+  databaseURL:"https://digital-wallet-40297-default-rtdb.europe-west1.firebasedatabase.app",
+  projectId:"digital-wallet-40297"
+});
+
+const auth = getAuth(app);
+const db = getDatabase(app);
+
+const purchaseBtn = document.getElementById("purchaseRobot");
+const plansContainer = document.getElementById("plansContainer");
+const notification = document.getElementById("notification");
+const userBalanceEl = document.getElementById("userBalance");
+
+function showNotification(msg) {
+  notification.innerText = msg;
+  notification.style.display = "block";
+  const hide = () => { notification.style.display = "none"; document.removeEventListener("click", hide); };
+  document.addEventListener("click", hide);
+}
+
+const plans = [
+  { pair:'EURUSD', price:100, payout:200, days:3 },
+  { pair:'GBPUSD', price:200, payout:400, days:3 },
+  { pair:'USDJPY', price:400, payout:800, days:3 },
+  { pair:'AUDUSD', price:600, payout:1200, days:3 },
+  { pair:'USDCAD', price:800, payout:1600, days:3 },
+  { pair:'NZDUSD', price:1000, payout:2000, days:3 },
+  { pair:'EURGBP', price:2000, payout:4000, days:3 },
+  { pair:'EURJPY', price:4000, payout:8000, days:3 },
+  { pair:'GBPJPY', price:6000, payout:12000, days:3 },
+  { pair:'USDCHF', price:8000, payout:16000, days:3 },
+  { pair:'BTCUSD', price:10000, payout:20000, days:3 }
+];
+
+onAuthStateChanged(auth, async user => {
+  if(!user) location.href="login.html";
+
+  const userRef = ref(db,"users/"+user.uid);
+  let userData = {};
+
+  onValue(userRef, snapshot => {
+    if(snapshot.exists()) userData = snapshot.val();
+    userBalanceEl.innerText = `Balance: $${userData.mainBalance || 0}`;
+    if(userData.robotPurchased) purchaseBtn.innerText = "Robot Active ✅";
+  });
+
+  const waitBalance = () => new Promise(res => {
+    const check = () => { if(userData.mainBalance !== undefined) res(); else setTimeout(check,100); }
+    check();
+  });
+  await waitBalance();
+
+  purchaseBtn.onclick = async () => {
+    if(userData.robotPurchased){
+      showNotification("Robot already active!");
+      return;
+    }
+    if(!userData.mainBalance || userData.mainBalance < 150){
+      showNotification("Insufficient balance!");
+      return;
+    }
+    await update(userRef,{ mainBalance: userData.mainBalance-150, robotPurchased: true });
+    showNotification("Robot purchased successfully!");
+  };
+
+  plans.forEach(async plan => {
+    const planDiv = document.createElement("div");
+    planDiv.className = "plan-card";
+
+    const tradeBtnId = `trade-${plan.pair}`;
+    const countdownId = `countdown-${plan.pair}`;
+
+    planDiv.innerHTML = `
+      <div class="plan-info">
+        <span style="font-weight:bold;">${plan.pair}</span>
+        <span>Invest $${plan.price} → Earn $${plan.payout} in ${plan.days} days</span>
+        <span class="countdown" id="${countdownId}"></span>
+      </div>
+      <button class="trade-btn" id="${tradeBtnId}">Trade Now</button>
+    `;
+    plansContainer.appendChild(planDiv);
+
+    const tradeBtn = document.getElementById(tradeBtnId);
+    const countdownEl = document.getElementById(countdownId);
+
+    const payoutsSnap = await get(ref(db,"payouts/"+user.uid));
+    let activeTrade = null;
+    if(payoutsSnap.exists()){
+      Object.entries(payoutsSnap.val()).forEach(([key,p]) => {
+        if(!p.claimed && p.pair === plan.pair) activeTrade = p;
+      });
+    }
+
+    const startCountdown = (maturityTime) => {
+      tradeBtn.innerText = "Robot trading now ✅";
+      tradeBtn.classList.add("active");
+      const interval = setInterval(() => {
+        const now = Date.now();
+        const remaining = maturityTime - now;
+        if(remaining <= 0){
+          countdownEl.innerText = "Trade complete ✅";
+          clearInterval(interval);
+        } else {
+          const d = Math.floor(remaining/(1000*60*60*24));
+          const h = Math.floor((remaining%(1000*60*60*24))/(1000*60*60));
+          const m = Math.floor((remaining%(1000*60*60))/(1000*60));
+          const s = Math.floor((remaining%(1000*60))/1000);
+          countdownEl.innerText = `${d}d ${h}h ${m}m ${s}s remaining`;
+        }
+      },1000);
+    };
+
+    if(activeTrade) startCountdown(activeTrade.maturity);
+
+    tradeBtn.onclick = async () => {
+      if(!userData.mainBalance || userData.mainBalance < plan.price){
+        showNotification("Insufficient balance!");
+        return;
+      }
+      await update(userRef,{ mainBalance: userData.mainBalance - plan.price });
+      const maturityTime = Date.now() + plan.days*24*60*60*1000;
+      const payoutRef = push(ref(db,"payouts/"+user.uid));
+      await set(payoutRef,{ amount: plan.payout, maturity: maturityTime, pair: plan.pair, claimed:false });
+      startCountdown(maturityTime);
+    };
+  });
+
+  setInterval(async () => {
+    const payoutsSnap = await get(ref(db,"payouts/"+user.uid));
+    if(!payoutsSnap.exists()) return;
+    Object.entries(payoutsSnap.val()).forEach(async ([key,p]) => {
+      if(!p.claimed && Date.now() >= p.maturity){
+        const currentSnap = await get(ref(db,"users/"+user.uid+"/mainBalance"));
+        const current = currentSnap.val() || 0;
+        await set(ref(db,"users/"+user.uid+"/mainBalance"), current + p.amount);
+        await set(ref(db,"payouts/"+user.uid+"/"+key+"/claimed"), true);
+      }
+    });
+  },5000);
+
+});
+</script>
+</body>
+  </html>
