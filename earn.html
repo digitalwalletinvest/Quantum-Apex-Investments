@@ -12,23 +12,18 @@
 <style>
 body { margin:0; font-family:Arial,sans-serif; background:#0f172a; color:white; }
 .container { max-width:960px; margin:0 auto; padding:1rem; }
-.card { background:#1e293b; border-radius:16px; padding:2rem; margin-bottom:1.5rem; box-shadow:0 4px 10px rgba(0,0,0,0.3); transition:transform 0.2s, box-shadow 0.2s; }
-.card:hover { transform:translateY(-4px); box-shadow:0 8px 20px rgba(0,0,0,0.5); }
+.card { background:#1e293b; border-radius:16px; padding:2rem; margin-bottom:1.5rem; box-shadow:0 4px 10px rgba(0,0,0,0.3); }
 .section-title { font-size:20px; font-weight:bold; color:#94a3b8; display:flex; align-items:center; gap:0.5rem; }
-button { cursor:pointer; border:none; }
-.back-btn { position:fixed; top:1rem; right:1rem; background:#ef4444; color:white; padding:0.6rem 1.2rem; border-radius:8px; font-weight:bold; z-index:1000; }
-.notification { position:fixed; top:50%; left:50%; transform:translate(-50%,-50%); background:#1e293b; padding:1rem 2rem; border-radius:12px; font-weight:bold; color:#facc15; display:none; z-index:1000; text-align:center; box-shadow:0 4px 15px rgba(0,0,0,0.4); }
+.back-btn { position:fixed; top:1rem; right:1rem; background:#ef4444; color:white; padding:0.6rem 1.2rem; border-radius:8px; font-weight:bold; }
+.notification { position:fixed; top:50%; left:50%; transform:translate(-50%,-50%); background:#1e293b; padding:1rem 2rem; border-radius:12px; font-weight:bold; color:#facc15; display:none; z-index:1000; }
 .balance { margin-top:0.5rem; font-weight:bold; color:#f59e0b; }
-.purchase-btn { background:#2563eb; color:white; padding:0.6rem 1.2rem; border-radius:8px; font-weight:bold; transition:background 0.2s; }
-.purchase-btn:hover { background:#1d4ed8; }
+.purchase-btn { background:#2563eb; color:white; padding:0.6rem 1.2rem; border-radius:8px; font-weight:bold; }
+.purchase-btn.active { background:#16a34a; cursor:default; }
 .plan-grid { display:grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap:1rem; margin-top:1rem; }
-.plan-card { background:#1e293b; border-radius:16px; padding:1.5rem; display:flex; flex-direction:column; justify-content:space-between; transition:background 0.2s, transform 0.2s; }
-.plan-card:hover { background:#334155; transform:translateY(-3px); }
-.plan-info { display:flex; flex-direction:column; gap:0.5rem; }
-.trade-btn { background:#16a34a; color:white; padding:0.8rem 1.5rem; border-radius:8px; font-weight:bold; transition:background 0.2s; width:100%; margin-top:0.8rem; }
+.plan-card { background:#1e293b; border-radius:16px; padding:1.5rem; }
+.trade-btn { background:#16a34a; color:white; padding:0.8rem; border-radius:8px; font-weight:bold; width:100%; margin-top:0.8rem; }
 .trade-btn.disabled { background:#555; cursor:not-allowed; }
 .trade-btn.active { background:#0ea5e9; }
-.trade-btn:hover:not(.active):not(.disabled) { background:#15803d; }
 .countdown { font-weight:bold; color:#10b981; margin-top:0.5rem; }
 </style>
 </head>
@@ -39,16 +34,9 @@ button { cursor:pointer; border:none; }
 
 <div class="container">
   <div class="card">
-    <div class="section-title">
-      <span style="font-size:2rem;">🤖</span> Quantum Apex Robot
-    </div>
-    <p style="margin-top:1rem; color:#cbd5e1;">
-      AI-powered trading system for <strong>Bitcoin</strong>, <strong>Forex</strong>, <strong>Binary</strong> markets. Executes trades automatically.
-    </p>
-    <p style="margin-top:0.5rem; color:#cbd5e1;">
-      <strong>Price:</strong> $150 <br>
-      <strong style="color:#22c55e;">Up to 200% ROI in 7 days</strong>
-    </p>
+    <div class="section-title"><span style="font-size:2rem;">🤖</span> Quantum Apex Robot</div>
+    <p>AI-powered trading system for Forex & Crypto markets.</p>
+    <p><strong>Price:</strong> $150</p>
     <p class="balance" id="userBalance">Balance: $0</p>
     <button id="purchaseRobot" class="purchase-btn">Purchase Robot 🤖</button>
   </div>
@@ -59,7 +47,7 @@ button { cursor:pointer; border:none; }
 <script type="module">
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
 import { getAuth, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js";
-import { getDatabase, ref, set, push, get, update, onValue } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-database.js";
+import { getDatabase, ref, get, set, push, update } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-database.js";
 
 const app = initializeApp({
   apiKey:"AIzaSyDaEphuY2kQue8m-20DDs68JDgQirAycBE",
@@ -70,18 +58,6 @@ const app = initializeApp({
 
 const auth = getAuth(app);
 const db = getDatabase(app);
-
-const purchaseBtn = document.getElementById("purchaseRobot");
-const plansContainer = document.getElementById("plansContainer");
-const notification = document.getElementById("notification");
-const userBalanceEl = document.getElementById("userBalance");
-
-function showNotification(msg){
-  notification.innerText = msg;
-  notification.style.display = "block";
-  const hide = () => { notification.style.display="none"; document.removeEventListener("click", hide); };
-  document.addEventListener("click", hide);
-}
 
 const plans = [
   { pair:'EURUSD', price:100, payout:200, days:3 },
@@ -97,141 +73,123 @@ const plans = [
   { pair:'BTCUSD', price:10000, payout:20000, days:3 }
 ];
 
+const plansContainer = document.getElementById("plansContainer");
+const purchaseBtn = document.getElementById("purchaseRobot");
+const userBalanceEl = document.getElementById("userBalance");
+const notification = document.getElementById("notification");
+
+const notify = msg => {
+  notification.innerText = msg;
+  notification.style.display = "block";
+  setTimeout(()=>notification.style.display="none",2500);
+};
+
 onAuthStateChanged(auth, async user => {
-  if(!user) location.href="login.html";
+  if(!user) return location.href="login.html";
 
   const userRef = ref(db,"users/"+user.uid);
   const payoutsRef = ref(db,"payouts/"+user.uid);
 
-  const getLatestUserData = async () => {
-    const snap = await get(userRef);
-    return snap.exists() ? snap.val() : {};
-  };
+  const userSnap = await get(userRef);
+  const userData = userSnap.val();
 
-  const refreshBalance = async () => {
-    const latest = await getLatestUserData();
-    userBalanceEl.innerText = `Balance: $${latest.mainBalance || 0}`;
-    return latest;
-  };
+  userBalanceEl.innerText =
+    `Balance: $${userData.mainBalance || 0} | Locked: $${userData.lockedBalance || 0}`;
 
-  // Render plan cards
-  plans.forEach(plan => {
-    const planDiv = document.createElement("div");
-    planDiv.className = "plan-card";
+  if(userData.robotPurchased){
+    purchaseBtn.innerText = "Robot active now";
+    purchaseBtn.classList.add("active");
+    purchaseBtn.disabled = true;
+  }
 
-    const tradeBtnId = `trade-${plan.pair}`;
-    const countdownId = `countdown-${plan.pair}`;
-
-    planDiv.innerHTML = `
-      <div class="plan-info">
-        <span style="font-weight:bold;">${plan.pair}</span>
-        <span>Invest $${plan.price} → Earn $${plan.payout} in ${plan.days} days</span>
-        <span class="countdown" id="${countdownId}"></span>
-      </div>
-      <button class="trade-btn disabled" id="${tradeBtnId}">Trade Now</button>
-    `;
-    plansContainer.appendChild(planDiv);
+  plans.forEach(plan=>{
+    const div=document.createElement("div");
+    div.className="plan-card";
+    div.innerHTML=`
+      <strong>${plan.pair}</strong>
+      <div>Invest $${plan.price} → Earn $${plan.payout}</div>
+      <div class="countdown" id="cd-${plan.pair}"></div>
+      <button class="trade-btn ${!userData.robotPurchased?'disabled':''}" id="btn-${plan.pair}">
+        Trade Now
+      </button>`;
+    plansContainer.appendChild(div);
   });
 
-  const tradeButtons = {};
-  const countdownElements = {};
-  plans.forEach(plan => {
-    tradeButtons[plan.pair] = document.getElementById(`trade-${plan.pair}`);
-    countdownElements[plan.pair] = document.getElementById(`countdown-${plan.pair}`);
-  });
-
-  const startCountdown = (pair, maturityTime) => {
-    const tradeBtn = tradeButtons[pair];
-    const countdownEl = countdownElements[pair];
-    tradeBtn.innerText = "Robot trading now ✅";
-    tradeBtn.classList.add("active");
-    tradeBtn.classList.remove("disabled");
-
-    const interval = setInterval(() => {
-      const now = Date.now();
-      const remaining = maturityTime - now;
-      if(remaining <= 0){
-        countdownEl.innerText = "Trade complete ✅";
-        tradeBtn.classList.remove("active");
-        clearInterval(interval);
-      } else {
-        const d = Math.floor(remaining/(1000*60*60*24));
-        const h = Math.floor((remaining%(1000*60*60*24))/(1000*60*60));
-        const m = Math.floor((remaining%(1000*60*60))/(1000*60));
-        const s = Math.floor((remaining%(1000*60))/1000);
-        countdownEl.innerText = `${d}d ${h}h ${m}m ${s}s remaining`;
-      }
-    },1000);
-  };
-
-  // Resume active trades on page load
   const payoutsSnap = await get(payoutsRef);
+  const activePairs = {};
+
   if(payoutsSnap.exists()){
-    Object.values(payoutsSnap.val()).forEach(p => {
+    Object.entries(payoutsSnap.val()).forEach(([id,p])=>{
       if(!p.claimed){
-        startCountdown(p.pair, p.maturity);
+        activePairs[p.pair]=id;
+        document.getElementById(`btn-${p.pair}`).classList.add("active");
+        document.getElementById(`btn-${p.pair}`).innerText="Trading...";
       }
     });
   }
 
-  // Setup trade buttons
-  plans.forEach(plan => {
-    const tradeBtn = tradeButtons[plan.pair];
-    tradeBtn.onclick = async () => {
-      const latest = await refreshBalance();
-      if(!latest.robotPurchased){
-        showNotification("You must purchase the robot first!");
-        return;
-      }
-      if(!latest.mainBalance || latest.mainBalance < plan.price){
-        showNotification("Insufficient balance!");
-        return;
-      }
+  plans.forEach(plan=>{
+    const btn=document.getElementById(`btn-${plan.pair}`);
+    btn.onclick=async()=>{
+      if(!userData.robotPurchased) return notify("Buy robot first");
+      if(activePairs[plan.pair]) return notify("Trade already active");
 
-      const maturityTime = Date.now() + plan.days*24*60*60*1000;
-      const payoutRef = push(payoutsRef);
-      await set(payoutRef, { amount: plan.payout, maturity: maturityTime, pair: plan.pair, claimed:false });
-      await update(userRef, { mainBalance: latest.mainBalance - plan.price });
+      const snap=await get(userRef);
+      const u=snap.val();
+      if(u.mainBalance < plan.price) return notify("Insufficient balance");
 
-      startCountdown(plan.pair, maturityTime);
-      showNotification(`Trading started for ${plan.pair}!`);
+      const maturity=Date.now()+plan.days*86400000;
+      const refId=push(payoutsRef);
+
+      await set(refId,{
+        pair:plan.pair,
+        amount:plan.payout,
+        maturity,
+        claimed:false
+      });
+
+      await update(userRef,{
+        mainBalance:u.mainBalance-plan.price,
+        lockedBalance:(u.lockedBalance||0)+plan.payout
+      });
+
+      notify("Trade started");
+      location.reload();
     };
   });
 
-  // Purchase robot
-  purchaseBtn.onclick = async () => {
-    const latest = await refreshBalance();
-    if(latest.robotPurchased){
-      showNotification("Robot already active!");
-      return;
-    }
-    if(!latest.mainBalance || latest.mainBalance < 150){
-      showNotification("Insufficient balance!");
-      return;
-    }
-    await update(userRef, { mainBalance: latest.mainBalance - 150, robotPurchased: true });
-    showNotification("Robot purchased successfully!");
-    refreshBalance();
+  purchaseBtn.onclick=async()=>{
+    if(userData.robotPurchased) return;
+    if(userData.mainBalance <150) return notify("Insufficient balance");
 
-    // Enable trade buttons
-    Object.values(tradeButtons).forEach(btn => btn.classList.remove("disabled"));
+    await update(userRef,{
+      mainBalance:userData.mainBalance-150,
+      robotPurchased:true
+    });
+
+    notify("Robot activated");
+    location.reload();
   };
 
-  // Auto-claim payouts every 5s
-  setInterval(async () => {
-    const payoutsSnap = await get(payoutsRef);
-    if(!payoutsSnap.exists()) return;
-    for(const [key,p] of Object.entries(payoutsSnap.val())){
-      if(!p.claimed && Date.now() >= p.maturity){
-        const latest = await get(userRef);
-        const currentBalance = latest.val().mainBalance || 0;
-        await set(ref(db,"users/"+user.uid+"/mainBalance"), currentBalance + p.amount);
-        await set(ref(db,"payouts/"+user.uid+"/"+key+"/claimed"), true);
-        refreshBalance();
+  setInterval(async()=>{
+    const snap=await get(payoutsRef);
+    if(!snap.exists()) return;
+
+    for(const [id,p] of Object.entries(snap.val())){
+      if(!p.claimed && Date.now()>=p.maturity){
+        const us=await get(userRef);
+        const u=us.val();
+
+        await update(userRef,{
+          mainBalance:u.mainBalance+p.amount,
+          lockedBalance:u.lockedBalance-p.amount
+        });
+
+        await update(ref(db,"payouts/"+user.uid+"/"+id),{claimed:true});
+        notify(`${p.pair} trade completed`);
       }
     }
   },5000);
-
 });
 </script>
 </body>
