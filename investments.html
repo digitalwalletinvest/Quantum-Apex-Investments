@@ -5,9 +5,9 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Investments - Quantum Apex</title>
 <script src="https://cdn.tailwindcss.com"></script>
-
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
 <style>
-body { background:#0f172a; font-family: 'Inter', sans-serif; }
+body { font-family: 'Inter', sans-serif; background: #0f172a; }
 .toast {
   position: fixed;
   top: 50%;
@@ -25,13 +25,18 @@ body { background:#0f172a; font-family: 'Inter', sans-serif; }
 
 <body class="text-white min-h-screen flex flex-col">
 
+<!-- NAVBAR -->
 <nav class="flex justify-between items-center px-6 py-4 bg-slate-900 shadow-lg">
 <h1 class="text-2xl font-bold text-emerald-400">Investment Plans</h1>
 <button onclick="window.location.href='dashboard.html'" class="bg-gray-600 px-4 py-2 rounded hover:bg-gray-700">Back</button>
 </nav>
 
-<section class="flex-1 p-6 space-y-6">
-  <div id="plansContainer" class="grid md:grid-cols-3 gap-4"></div>
+<!-- INVESTMENT PLANS -->
+<section class="bg-slate-800 py-12 px-6 text-center flex-1">
+<h2 class="text-3xl font-bold mb-8">Investment Plans</h2>
+<div id="plansContainer" class="grid sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
+<!-- Dynamic plans will appear here -->
+</div>
 </section>
 
 <div id="toast" class="toast text-center"></div>
@@ -41,19 +46,23 @@ import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/fireba
 import { getAuth, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js";
 import { getDatabase, ref, onValue, update, push, set } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-database.js";
 
+/* ================= FIREBASE CONFIG ================= */
 const firebaseConfig = {
-    apiKey: "AIzaSyDaEphuY2kQue8m-20DDs68JDgQirAycBE",
-    authDomain: "digital-wallet-40297.firebaseapp.com",
-    databaseURL: "https://digital-wallet-40297-default-rtdb.europe-west1.firebasedatabase.app",
-    projectId: "digital-wallet-40297",
-    storageBucket: "digital-wallet-40297.firebasestorage.app",
-    messagingSenderId: "953454788272",
-    appId: "1:953454788272:android:961fd704f587cf1b8c8575"
+  apiKey: "AIzaSyDaEphuY2kQue8m-20DDs68JDgQirAycBE",
+  authDomain: "digital-wallet-40297.firebaseapp.com",
+  databaseURL: "https://digital-wallet-40297-default-rtdb.europe-west1.firebasedatabase.app",
+  projectId: "digital-wallet-40297",
+  storageBucket: "digital-wallet-40297.firebasestorage.app",
+  messagingSenderId: "953454788272",
+  appId: "1:953454788272:android:961fd704f587cf1b8c8575"
 };
 
 const app = initializeApp(firebaseConfig);
 const auth = getAuth(app);
 const db = getDatabase(app);
+
+let currentUser = null;
+let userData = null;
 
 function showToast(msg, success=true){
   const toast = document.getElementById("toast");
@@ -63,57 +72,71 @@ function showToast(msg, success=true){
   setTimeout(()=> toast.style.display="none", 3000);
 }
 
+/* ================= INVESTMENT PLANS ================= */
 const plans = [
-  { name: "$20 Plan", min: 20, roi: 110, duration: "12h" },
-  { name: "$30 Plan", min: 30, roi: 115, duration: "12h" },
-  { name: "$50 Plan", min: 50, roi: 120, duration: "12h" },
-  { name: "$100 Plan", min: 100, roi: 125, duration: "24h" },
-  { name: "$200 Plan", min: 200, roi: 130, duration: "24h" }
+  { name: "Plan $20", min: 20, roi: 40, duration: "7 Days" },
+  { name: "Plan $30", min: 30, roi: 40, duration: "7 Days" },
+  { name: "Plan $50", min: 50, roi: 40, duration: "7 Days" },
+  { name: "Plan $100", min: 100, roi: 40, duration: "7 Days" },
+  { name: "Plan $200", min: 200, roi: 40, duration: "7 Days" },
+  { name: "Plan $400", min: 400, roi: 40, duration: "7 Days" },
+  { name: "Plan $600", min: 600, roi: 40, duration: "7 Days" },
+  { name: "Plan $800", min: 800, roi: 40, duration: "7 Days" },
+  { name: "Plan $1000", min: 1000, roi: 40, duration: "7 Days" },
+  { name: "Plan $5000", min: 5000, roi: 40, duration: "7 Days" },
+  { name: "Plan $10000", min: 10000, roi: 40, duration: "7 Days" }
 ];
 
-let currentUser, userData;
-
-onAuthStateChanged(auth, user => {
-  if(user){
-    currentUser = user;
-    const userRef = ref(db, "users/"+user.uid);
-
-    onValue(userRef, snapshot => {
-      if(snapshot.exists()){
-        userData = snapshot.val();
-      } else {
-        userData = {
-          mainBalance: 0,
-          lockedBalance: 0
-        };
-        set(userRef, userData);
-      }
-      renderPlans();
-    });
-  } else {
-    window.location.href = "login.html";
+/* ================= AUTH ================= */
+onAuthStateChanged(auth, (user) => {
+  if (!user) {
+    document.getElementById("plansContainer").innerHTML =
+      "<h2 class='text-center text-red-400 text-xl col-span-full'>Please login first</h2>";
+    return;
   }
+
+  currentUser = user;
+  const userRef = ref(db, "users/" + user.uid);
+
+  onValue(userRef, (snapshot) => {
+    userData = snapshot.val() || { mainBalance: 0, lockedBalance: 0 };
+    if (!snapshot.exists()) set(userRef, userData);
+
+    // Check for matured investments every time user loads the page
+    checkMaturedInvestments();
+
+    renderPlans();
+  });
 });
 
+/* ================= RENDER ================= */
 function renderPlans(){
   const container = document.getElementById("plansContainer");
   container.innerHTML = "";
 
   plans.forEach(plan => {
+    const payout = (plan.min * (1 + plan.roi / 100)).toFixed(2);
+
     const div = document.createElement("div");
-    div.className = "bg-slate-800 p-6 rounded-2xl text-center space-y-2";
+    div.className = "bg-slate-900 p-6 rounded-2xl border border-emerald-500 flex flex-col justify-between";
+
     div.innerHTML = `
-      <h3 class="text-xl font-bold">${plan.name}</h3>
-      <p>Minimum: $${plan.min}</p>
-      <p>ROI: ${plan.roi}%</p>
-      <p>Duration: ${plan.duration}</p>
-      <button class="bg-emerald-500 px-4 py-2 rounded hover:bg-emerald-600">Invest Now</button>
+      <h3 class="text-xl font-semibold mb-2">${plan.name}</h3>
+      <p class="text-2xl font-bold mb-2">${plan.roi}% ROI</p>
+      <p class="text-gray-400 mb-2">${plan.duration}</p>
+      <p class="text-gray-400 mb-2">Minimum $${plan.min}</p>
+      <p class="text-emerald-400 font-semibold mb-4">Payout: $${payout}</p>
+      <button class="bg-emerald-500 px-4 py-2 rounded-full hover:bg-emerald-600 font-semibold">
+        Invest Now
+      </button>
     `;
+
     div.querySelector("button").addEventListener("click", ()=> invest(plan));
     container.appendChild(div);
   });
 }
 
+/* ================= INVEST ================= */
 async function invest(plan){
   if(userData.mainBalance < plan.min){
     showToast("Insufficient balance", false);
@@ -136,16 +159,40 @@ async function invest(plan){
       roi: plan.roi,
       status: "active",
       startTime: Date.now(),
-      duration: plan.duration
+      duration: plan.duration,
+      payout: plan.min * (1 + plan.roi/100)
     });
 
-    showToast("Investment successful");
+    showToast(`Invested $${plan.min} in ${plan.name}`);
   }catch(err){
     console.error(err);
     showToast("Investment failed", false);
   }
 }
-</script>
 
+/* ================= AUTOMATIC MATURITY CHECK ================= */
+function checkMaturedInvestments() {
+  const invRef = ref(db, `investments/${currentUser.uid}`);
+  onValue(invRef, (snapshot) => {
+    snapshot.forEach(child => {
+      const inv = child.val();
+      const investId = child.key;
+      if(inv.status === "active") {
+        const durationMs = 7 * 24 * 60 * 60 * 1000; // 7 days
+        if(Date.now() >= inv.startTime + durationMs) {
+          // Add payout to mainBalance
+          const newBalance = (userData.mainBalance || 0) + inv.payout;
+          update(ref(db, "users/"+currentUser.uid), { mainBalance: newBalance });
+
+          // Mark investment as matured
+          update(ref(db, `investments/${currentUser.uid}/${investId}`), { status: "matured" });
+
+          showToast(`Investment ${inv.planName} matured! $${inv.payout} added to balance.`);
+        }
+      }
+    });
+  });
+}
+</script>
 </body>
 </html>
