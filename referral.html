@@ -10,115 +10,38 @@
   <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-database.js"></script>
 
   <style>
-    body {
-      margin: 0;
-      font-family: Arial, sans-serif;
-      background: #0f172a;
-      color: white;
-    }
-
-    .container {
-      max-width: 900px;
-      margin: 0 auto;
-      padding: 1.5rem;
-    }
-
-    .card {
-      background: #1e293b;
-      border-radius: 18px;
-      padding: 2rem;
-      box-shadow: 0 6px 18px rgba(0,0,0,0.4);
-      margin-bottom: 1.5rem;
-    }
-
-    .title {
-      display: flex;
-      align-items: center;
-      gap: 0.6rem;
-      font-size: 22px;
-      font-weight: bold;
-      color: #e5e7eb;
-    }
-
-    .subtitle {
-      color: #94a3b8;
-      margin-top: 0.8rem;
-      line-height: 1.6;
-    }
-
-    .highlight {
-      color: #22c55e;
-      font-weight: bold;
-    }
-
-    .ref-box {
-      background: #0f172a;
-      border-radius: 12px;
-      padding: 1rem;
-      margin-top: 1.2rem;
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      gap: 1rem;
-      flex-wrap: wrap;
-    }
-
-    .ref-label {
-      color: #94a3b8;
-      font-size: 14px;
-    }
-
-    .ref-value {
-      font-weight: bold;
-      color: #38bdf8;
-      font-size: 16px;
-      word-break: break-all;
-    }
-
-    .balance-card {
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      background: linear-gradient(135deg, #0ea5e9, #22c55e);
-      border-radius: 16px;
-      padding: 1.5rem;
-      margin-top: 1.5rem;
-    }
-
-    .balance-text {
-      font-size: 16px;
-      font-weight: bold;
-    }
-
-    .balance-amount {
-      font-size: 28px;
-      font-weight: bold;
-    }
-
-    .info {
-      margin-top: 1.5rem;
-      background: #020617;
-      border-radius: 14px;
-      padding: 1.2rem;
-      font-size: 14px;
-      color: #cbd5e1;
-    }
-
-    .info li {
-      margin-bottom: 0.6rem;
-    }
-
-    .back-btn {
+    body { margin:0; font-family:Arial,sans-serif; background:#0f172a; color:white; }
+    .container { max-width:900px; margin:0 auto; padding:1.5rem; }
+    .card { background:#1e293b; border-radius:18px; padding:2rem; box-shadow:0 6px 18px rgba(0,0,0,0.4); margin-bottom:1.5rem; }
+    .title { display:flex; align-items:center; gap:0.6rem; font-size:22px; font-weight:bold; color:#e5e7eb; }
+    .subtitle { color:#94a3b8; margin-top:0.8rem; line-height:1.6; }
+    .highlight { color:#22c55e; font-weight:bold; }
+    .ref-box { background:#0f172a; border-radius:12px; padding:1rem; margin-top:1.2rem; display:flex; justify-content:space-between; align-items:center; gap:1rem; flex-wrap:wrap; }
+    .ref-label { color:#94a3b8; font-size:14px; }
+    .ref-value { font-weight:bold; color:#38bdf8; font-size:16px; word-break:break-all; }
+    .copy-btn { background:#2563eb; color:white; padding:0.5rem 1rem; border-radius:8px; cursor:pointer; font-size:14px; }
+    .balance-card { display:flex; justify-content:space-between; align-items:center; background:linear-gradient(135deg,#0ea5e9,#22c55e); border-radius:16px; padding:1.5rem; margin-top:1.5rem; }
+    .balance-text { font-size:16px; font-weight:bold; }
+    .balance-amount { font-size:28px; font-weight:bold; }
+    .info { margin-top:1.5rem; background:#020617; border-radius:14px; padding:1.2rem; font-size:14px; color:#cbd5e1; }
+    .info li { margin-bottom:0.6rem; }
+    .back-btn { position:fixed; top:1rem; right:1rem; background:#ef4444; color:white; border:none; padding:0.6rem 1.2rem; border-radius:10px; font-weight:bold; cursor:pointer; }
+    
+    /* Toast notification */
+    .toast {
       position: fixed;
-      top: 1rem;
-      right: 1rem;
-      background: #ef4444;
-      color: white;
-      border: none;
-      padding: 0.6rem 1.2rem;
-      border-radius: 10px;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      background: #1e293b;
+      color: #facc15;
+      padding: 1rem 2rem;
+      border-radius: 12px;
       font-weight: bold;
-      cursor: pointer;
+      box-shadow: 0 4px 15px rgba(0,0,0,0.4);
+      display: none;
+      z-index: 1000;
+      text-align: center;
     }
   </style>
 </head>
@@ -144,6 +67,7 @@
         <div class="ref-label">Your Referral Code</div>
         <div class="ref-value" id="code">—</div>
       </div>
+      <button class="copy-btn" id="copyBtn">Copy Code</button>
     </div>
 
     <div class="balance-card">
@@ -163,10 +87,12 @@
 
 </div>
 
+<div id="toast" class="toast"></div>
+
 <script type="module">
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
 import { getAuth, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js";
-import { getDatabase, ref, onValue } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-database.js";
+import { getDatabase, ref, onValue, update } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-database.js";
 
 const app = initializeApp({
   apiKey: "AIzaSyDaEphuY2kQue8m-20DDs68JDgQirAycBE",
@@ -178,15 +104,49 @@ const app = initializeApp({
 const auth = getAuth(app);
 const db = getDatabase(app);
 
-onAuthStateChanged(auth, user => {
-  if (!user) return;
+const toast = document.getElementById("toast");
+
+function showNotification(msg){
+  toast.innerText = msg;
+  toast.style.display = "block";
+  setTimeout(()=>{ toast.style.display = "none"; }, 2000);
+}
+
+// Generate short referral code
+function generateReferralCode(length = 6){
+  const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789';
+  let code = '';
+  for(let i=0;i<length;i++){
+    code += chars.charAt(Math.floor(Math.random() * chars.length));
+  }
+  return code;
+}
+
+onAuthStateChanged(auth, async user => {
+  if(!user) return;
 
   const userRef = ref(db, "users/" + user.uid);
-  onValue(userRef, snap => {
+
+  // Check if user already has a code
+  onValue(userRef, async snap => {
     const data = snap.val() || {};
-    document.getElementById("code").innerText = data.referralCode || "—";
+    let code = data.referralCode;
+
+    // Generate new code if not present
+    if(!code){
+      code = generateReferralCode();
+      await update(userRef, { referralCode: code });
+    }
+
+    document.getElementById("code").innerText = code;
     document.getElementById("balance").innerText = data.referralBalance || 0;
   });
+});
+
+// Copy referral code with notification
+document.getElementById("copyBtn").addEventListener("click", ()=>{
+  const codeText = document.getElementById("code").innerText;
+  navigator.clipboard.writeText(codeText).then(()=> showNotification("Referral code copied!"));
 });
 </script>
 
