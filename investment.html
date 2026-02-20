@@ -29,26 +29,21 @@ body { font-family: 'Inter', sans-serif; background: #0f172a; }
 </head>
 <body class="text-white min-h-screen flex flex-col">
 
-<!-- NAVBAR -->
 <nav class="flex justify-between items-center px-6 py-4 bg-slate-900 shadow-lg">
   <h1 class="text-2xl font-bold text-emerald-400">My Investments</h1>
   <button onclick="window.location.href='dashboard.html'" class="bg-gray-600 px-4 py-2 rounded hover:bg-gray-700">Back</button>
 </nav>
 
 <section class="flex-1 p-6 space-y-6">
-
-  <!-- ACTIVE INVESTMENTS -->
   <div class="bg-slate-800 p-6 rounded-2xl space-y-4">
     <h2 class="text-xl font-semibold text-emerald-400">Active Investments</h2>
     <div id="activeInvestments" class="space-y-2">Loading...</div>
   </div>
 
-  <!-- ONGOING TRADES -->
   <div class="bg-slate-800 p-6 rounded-2xl space-y-4">
     <h2 class="text-xl font-semibold text-emerald-400">Ongoing Trades (Robots)</h2>
     <div id="trades" class="space-y-2">Loading...</div>
   </div>
-
 </section>
 
 <div id="toast" class="toast"></div>
@@ -68,8 +63,6 @@ const firebaseConfig = {
 const app = initializeApp(firebaseConfig);
 const auth = getAuth(app);
 const db = getDatabase(app);
-
-let currentUser;
 
 function showToast(msg, success=true){
   const toast = document.getElementById("toast");
@@ -95,7 +88,6 @@ function formatTime(ms){
 
 onAuthStateChanged(auth, user => {
   if(!user){ window.location.href="login.html"; return; }
-  currentUser = user;
 
   const investmentsRef = ref(db, `investments/${user.uid}`);
   const tradesRef = ref(db, `trades/${user.uid}`);
@@ -106,12 +98,11 @@ onAuthStateChanged(auth, user => {
     activeDiv.innerHTML = "";
     snapshot.forEach(child => {
       const inv = child.val();
-      if(inv.status==="active"){
+      if(inv.status === "active"){
         const div = document.createElement("div");
         div.className = "bg-slate-900 p-3 rounded flex flex-col justify-between";
         const start = inv.startTime;
         const durationMs = 7*24*60*60*1000;
-
         div.innerHTML = `
           <div class="flex justify-between items-center">
             <div>
@@ -125,7 +116,6 @@ onAuthStateChanged(auth, user => {
           </div>
           <div class="text-gray-400 text-xs mt-1" id="time-${child.key}"></div>
         `;
-
         activeDiv.appendChild(div);
 
         const progressEl = div.querySelector(".progress-bar");
@@ -144,55 +134,59 @@ onAuthStateChanged(auth, user => {
     if(!activeDiv.hasChildNodes()) activeDiv.innerHTML="<p class='text-gray-400'>No active investments</p>";
   });
 
-  // Ongoing Trades with exact duration
+  // Ongoing Trades
   onValue(tradesRef, snapshot => {
     const tradesDiv = document.getElementById("trades");
     tradesDiv.innerHTML = "";
+    let tradesFound = false;
 
-    let hasTrades = false;
+    // traverse all child nodes (nested)
     snapshot.forEach(child => {
-      const trade = child.val();
-      hasTrades = true;
+      const tradeData = child.val();
+      Object.keys(tradeData).forEach(key => {
+        const trade = tradeData[key];
+        if(!trade || !trade.robotName) return;
+        tradesFound = true;
 
-      const div = document.createElement("div");
-      div.className = "bg-slate-900 p-3 rounded flex flex-col justify-between";
+        const div = document.createElement("div");
+        div.className = "bg-slate-900 p-3 rounded flex flex-col justify-between";
 
-      const start = trade.startTime || Date.now();
-      const durationMs = trade.durationMs || 7*24*60*60*1000; // exact trade duration if available
+        const start = trade.startTime || Date.now();
+        const durationMs = trade.durationMs || 7*24*60*60*1000;
 
-      div.innerHTML = `
-        <div class="flex justify-between items-center">
-          <div>
-            <div class="font-semibold">${trade.robotName}</div>
-            <div class="text-gray-400">Pair: ${trade.pair} | Invested: $${trade.amount} | Current: $${trade.currentValue} | Status: ${trade.status}</div>
+        div.innerHTML = `
+          <div class="flex justify-between items-center">
+            <div>
+              <div class="font-semibold">${trade.robotName}</div>
+              <div class="text-gray-400">Pair: ${trade.pair || '-'} | Invested: $${trade.amount || 0} | Current: $${trade.currentValue || 0} | Status: ${trade.status || '-'}</div>
+            </div>
+            <div class="copy" onclick="copyText('${trade.robotName} - $${trade.amount}')">Copy</div>
           </div>
-          <div class="copy" onclick="copyText('${trade.robotName} - $${trade.amount}')">Copy</div>
-        </div>
-        <div class="progress-bar-container mt-2">
-          <div class="progress-bar" id="trade-progress-${child.key}"></div>
-        </div>
-        <div class="text-gray-400 text-xs mt-1" id="trade-time-${child.key}"></div>
-      `;
+          <div class="progress-bar-container mt-2">
+            <div class="progress-bar" id="trade-progress-${child.key}-${key}"></div>
+          </div>
+          <div class="text-gray-400 text-xs mt-1" id="trade-time-${child.key}-${key}"></div>
+        `;
 
-      tradesDiv.appendChild(div);
+        tradesDiv.appendChild(div);
 
-      const progressEl = div.querySelector(".progress-bar");
-      const timeEl = div.querySelector(`#trade-time-${child.key}`);
+        const progressEl = div.querySelector(".progress-bar");
+        const timeEl = div.querySelector(`#trade-time-${child.key}-${key}`);
 
-      function updateTradeProgress(){
-        const elapsed = Date.now() - start;
-        const percent = Math.min((elapsed/durationMs)*100,100);
-        progressEl.style.width = percent+"%";
-        timeEl.innerText = "Time elapsed: "+formatTime(elapsed)+" / "+formatTime(durationMs);
-        if(percent<100) requestAnimationFrame(updateTradeProgress);
-      }
-      updateTradeProgress();
+        function updateTradeProgress(){
+          const elapsed = Date.now() - start;
+          const percent = Math.min((elapsed/durationMs)*100,100);
+          progressEl.style.width = percent+"%";
+          timeEl.innerText = "Time elapsed: "+formatTime(elapsed)+" / "+formatTime(durationMs);
+          if(percent<100) requestAnimationFrame(updateTradeProgress);
+        }
+        updateTradeProgress();
+      });
     });
 
-    if(!hasTrades) tradesDiv.innerHTML="<p class='text-gray-400'>No trades yet</p>";
+    if(!tradesFound) tradesDiv.innerHTML="<p class='text-gray-400'>No trades yet</p>";
   });
-
 });
 </script>
 </body>
-  </html>
+</html>
