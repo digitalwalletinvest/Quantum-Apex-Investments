@@ -4,10 +4,12 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Deposit - Quantum Apex</title>
+
 <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-database.js"></script>
 <script src="https://cdn.tailwindcss.com"></script>
+
 <style>
 body { background:#0f172a; font-family: 'Inter', sans-serif; }
 .toast {
@@ -17,8 +19,16 @@ body { background:#0f172a; font-family: 'Inter', sans-serif; }
   border-radius: 12px; box-shadow: 0 0 25px rgba(16,185,129,0.4);
   display: none; z-index: 1000; text-align:center;
 }
+.copy {
+  background:#020617;
+  padding:8px;
+  border-radius:8px;
+  cursor:pointer;
+  word-break: break-all;
+}
 </style>
 </head>
+
 <body class="text-white min-h-screen flex flex-col">
 
 <nav class="flex justify-between items-center px-6 py-4 bg-slate-900 shadow-lg">
@@ -32,28 +42,22 @@ body { background:#0f172a; font-family: 'Inter', sans-serif; }
   <h2 class="text-xl font-semibold mb-2">Enter Deposit Amount</h2>
   <input id="depositAmount" type="number" placeholder="Amount" class="w-full p-3 rounded bg-slate-700">
   <button onclick="makeDeposit()" class="w-full bg-emerald-500 py-3 rounded hover:bg-emerald-600 font-semibold">Deposit Now</button>
+  <p class="text-yellow-400 text-sm">⚠ Deposits are credited only after admin approval</p>
 </div>
 
-<div class="bg-slate-800 p-6 rounded-2xl space-y-2">
-  <h3 class="font-semibold mb-2">Deposit Instructions</h3>
-  <p id="instructions">Select your country to see instructions.</p>
+<div class="bg-slate-800 p-6 rounded-2xl space-y-3">
+  <h3 class="font-semibold">Deposit Instructions</h3>
+
   <select id="countrySelect" class="w-full p-3 rounded bg-slate-700">
     <option value="">Select Country</option>
-    <option value="Kenya">Kenya</option>
-    <option value="Uganda">Uganda</option>
-    <option value="Tanzania">Tanzania</option>
-    <option value="Rwanda">Rwanda</option>
-    <option value="Zambia">Zambia</option>
-    <option value="Botswana">Botswana</option>
-    <option value="South Sudan">South Sudan</option>
-    <option value="Mozambique">Mozambique</option>
-    <option value="United Kingdom">United Kingdom</option>
-    <option value="Nigeria">Nigeria</option>
-    <option value="France">France</option>
-    <option value="Ethiopia">Ethiopia</option>
-    <option value="South Africa">South Africa</option>
-    <option value="Zimbabwe">Zimbabwe</option>
+    <option>Kenya</option><option>Uganda</option><option>Tanzania</option>
+    <option>Rwanda</option><option>Zambia</option><option>Botswana</option>
+    <option>South Sudan</option><option>Mozambique</option>
+    <option>United Kingdom</option><option>Nigeria</option><option>France</option>
+    <option>Ethiopia</option><option>South Africa</option><option>Zimbabwe</option>
   </select>
+
+  <div id="instructions" class="space-y-4 text-sm text-gray-300"></div>
 </div>
 
 <div class="bg-slate-800 p-6 rounded-2xl">
@@ -70,81 +74,69 @@ import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/fireba
 import { getAuth, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js";
 import { getDatabase, ref, onValue, update } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-database.js";
 
-const firebaseConfig = {
-    apiKey: "AIzaSyDaEphuY2kQue8m-20DDs68JDgQirAycBE",
-    authDomain: "digital-wallet-40297.firebaseapp.com",
-    databaseURL: "https://digital-wallet-40297-default-rtdb.firebaseio.com",
-    projectId: "digital-wallet-40297",
-    storageBucket: "digital-wallet-40297.firebasestorage.app",
-    messagingSenderId: "953454788272",
-    appId: "1:953454788272:android:961fd704f587cf1b8c8575"
-};
+const app = initializeApp({
+  apiKey: "AIzaSyDaEphuY2kQue8m-20DDs68JDgQirAycBE",
+  authDomain: "digital-wallet-40297.firebaseapp.com",
+  databaseURL: "https://digital-wallet-40297-default-rtdb.firebaseio.com",
+  projectId: "digital-wallet-40297"
+});
 
-const app = initializeApp(firebaseConfig);
 const auth = getAuth(app);
 const db = getDatabase(app);
 
-function showToast(msg, success=true){
-  const toast = document.getElementById("toast");
-  toast.innerText = msg;
-  toast.style.display = "block";
-  toast.style.border = success ? "2px solid #10b981" : "2px solid red";
-  setTimeout(()=> toast.style.display="none", 3000);
-}
+const USDT = "0xe5e959e57ae1937acf0dde128a8b7ee0aa970168";
 
-let currentUser, userData;
+const mukuruDetails = `
+Name: LANGAT ROBERT
+National ID: 39822378
+Country: Kenya
+City: Nairobi
+Address: Nairobi
+Gender: Male
+Phone: 00254707207201
+Postal Code: 0090
+Date of Birth: 02/02/2000
 
-onAuthStateChanged(auth, user=>{
-  if(user){
-    currentUser = user;
-    const userRef = ref(db, "users/"+user.uid);
-    onValue(userRef, snapshot=>{
-      if(snapshot.exists()){
-        userData = snapshot.val();
-        document.getElementById("currentBalance").innerText = `$${userData.mainBalance.toFixed(2)}`;
-        document.getElementById("countrySelect").value = userData.country || "";
-      }
-    });
-  }else{
-    window.location.href="login.html";
-  }
-});
+Tell Mukuru teller:
+Send money to MOBILE WALLET (M-Pesa KES)
+`;
 
-const instructionsMap = {
-  "Kenya": "Send money via Safaricom M-Pesa to 0707207201 (Langat Robert).",
-  "Uganda": "Dial *165# → Send money → Send outside Uganda → Select Kenya → Safaricom M-Pesa → 254707207201 (Langat Robert).",
-  "Tanzania": "Piga *115# → Tuma pesa → Nje ya nchi →  Kenya → Safaricom M-Pesa → 254707207201 (Langat Robert).",
-  "Rwanda": "Dial *182*7# → International Money Transfer → Kenya → M-Pesa → 254707207201 (Langat Robert) → Enter amount (RWF) → Enter MTN PIN → Confirm.",
-  "Zambia": "Dial *170# → Money Transfer → International Transfer →Kenya → M-Pesa → 254707207201 (Langat Robert) → Enter amount (ZMW) → Enter MTN PIN → Confirm.",
-  "Botswana": "Dial *151# → Send Money → International →Kenya →M-Pesa → 254707207201 (Langat Robert) → Enter amount (BWP) → Enter Orange Money PIN → Confirm.",
-  "South Sudan": "Dial *165# → Send Money → International Transfer → Kenya → M-Pesa → 254707207201 (Langat Robert) → Enter amount (SSP) → Enter MTN PIN → Confirm.",
-  "Mozambique": "Send via USDT address (contact support).",
-  "United Kingdom": "Send via USDT address (contact support).",
-  "Nigeria": "Send via USDT address (contact support).",
-  "France": "Send via USDT address (contact support).",
-  "Ethiopia": "Dial *127# → Transfer → International Transfer → Kenya → M-Pesa → 254707207201 (Langat Robert) → Enter amount (ETB) → Enter Telebirr PIN → Confirm.",
-  "South Africa": "Send via Mukuru (contact support).",
-  "Zimbabwe": "Send via Mukuru (contact support)."
+function copyText(t){ navigator.clipboard.writeText(t); alert("Copied"); }
+
+const mobileInstructions = {
+  "Kenya": "Send via Safaricom M-Pesa to 0707207201 (Langat Robert)",
+  "Uganda": "Dial *165# → Send outside Uganda → Kenya → M-Pesa → 254707207201 (Langat Robert)",
+  "Tanzania": "Piga *115# → Tuma pesa → Nje ya nchi  → Kenya → Safaricom M-Pesa → 254707207201 ( Langat Robert)",
+  "Rwanda": "Dial *182*7# → Send money → International Transfer → Kenya → M-Pesa → 254707207201 (Langat Robert)",
+  "Zambia": "Dial *170# → International Transfer → Kenya → Safaricom M-Pesa → 254707207201 (Langat Robert)",
+  "Botswana": "Dial *151# → International Transfer → Kenya → Safaricom M-Pesa → 254707207201 (Langat Robert)",
+  "South Sudan": "Dial *165# → International transfer → Kenya → Safaricom M-Pesa → 254707207201 (Langat Robert)",
+  "Ethiopia": "Dial *127# → International transfer → Kenya → Safaricom M-Pesa → 254707207201 (Langat Robert)"
 };
 
-document.getElementById("countrySelect").addEventListener("change", ()=>{
-  const country = document.getElementById("countrySelect").value;
-  document.getElementById("instructions").innerText = instructionsMap[country] || "Select your country to see instructions.";
-});
+document.getElementById("countrySelect").addEventListener("change", e=>{
+  const c = e.target.value;
+  if(!c){ instructions.innerHTML=""; return; }
 
-window.makeDeposit = async function(){
-  const amt = parseFloat(document.getElementById("depositAmount").value);
-  if(isNaN(amt) || amt <= 0){ showToast("Enter a valid amount", false); return; }
-  const newBalance = (userData.mainBalance || 0) + amt;
-  try{
-    await update(ref(db, "users/"+currentUser.uid), { mainBalance: newBalance });
-    showToast(`Deposit successful: $${amt}`);
-    document.getElementById("depositAmount").value = "";
-    document.getElementById("currentBalance").innerText = `$${newBalance.toFixed(2)}`;
-  }catch(err){
-    showToast("Deposit failed", false);
-  }
-};
+  instructions.innerHTML = `
+    <div>
+      <h4 class="text-emerald-400 font-semibold">USDT (ERC20)</h4>
+      <div class="copy" onclick="copyText('${USDT}')">${USDT}</div>
+    </div>
+
+    ${mobileInstructions[c] ? `
+    <div>
+      <h4 class="text-emerald-400 font-semibold">Mobile Money</h4>
+      <div class="copy" onclick="copyText('${mobileInstructions[c]}')">${mobileInstructions[c]}</div>
+    </div>` : ""}
+
+    ${["South Africa","Zimbabwe","Botswana"].includes(c) ? `
+    <div>
+      <h4 class="text-emerald-400 font-semibold">Mukuru</h4>
+      <pre class="copy" onclick="copyText(\`${mukuruDetails}\`)">${mukuruDetails}</pre>
+    </div>` : ""}
+  `;
+});
 </script>
 </body>
-    </html>
+</html>
