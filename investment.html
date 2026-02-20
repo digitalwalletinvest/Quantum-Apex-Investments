@@ -1,0 +1,198 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>My Investments - Quantum Apex</title>
+<script src="https://cdn.tailwindcss.com"></script>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
+<style>
+body { font-family: 'Inter', sans-serif; background: #0f172a; }
+.toast {
+  position: fixed;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  background: #1e293b;
+  padding: 20px 40px;
+  border-radius: 12px;
+  box-shadow: 0 0 25px rgba(16,185,129,0.4);
+  display: none;
+  z-index: 1000;
+  color: white;
+  text-align:center;
+}
+.copy { cursor:pointer; background:#020617; padding:5px 10px; border-radius:6px; display:inline-block; word-break:break-all; }
+.progress-bar-container { background:#1e293b; border-radius:6px; width:100%; height:10px; margin-top:5px; }
+.progress-bar { background:#10b981; height:100%; border-radius:6px; width:0%; transition: width 0.5s ease; }
+</style>
+</head>
+<body class="text-white min-h-screen flex flex-col">
+
+<!-- NAVBAR -->
+<nav class="flex justify-between items-center px-6 py-4 bg-slate-900 shadow-lg">
+  <h1 class="text-2xl font-bold text-emerald-400">My Investments</h1>
+  <button onclick="window.location.href='dashboard.html'" class="bg-gray-600 px-4 py-2 rounded hover:bg-gray-700">Back</button>
+</nav>
+
+<section class="flex-1 p-6 space-y-6">
+
+  <!-- ACTIVE INVESTMENTS -->
+  <div class="bg-slate-800 p-6 rounded-2xl space-y-4">
+    <h2 class="text-xl font-semibold text-emerald-400">Active Investments</h2>
+    <div id="activeInvestments" class="space-y-2">Loading...</div>
+  </div>
+
+  <!-- ONGOING TRADES -->
+  <div class="bg-slate-800 p-6 rounded-2xl space-y-4">
+    <h2 class="text-xl font-semibold text-emerald-400">Ongoing Trades (Robots)</h2>
+    <div id="trades" class="space-y-2">Loading...</div>
+  </div>
+
+</section>
+
+<div id="toast" class="toast"></div>
+
+<script type="module">
+import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
+import { getAuth, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js";
+import { getDatabase, ref, onValue } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-database.js";
+
+const firebaseConfig = {
+  apiKey: "AIzaSyDaEphuY2kQue8m-20DDs68JDgQirAycBE",
+  authDomain: "digital-wallet-40297.firebaseapp.com",
+  databaseURL: "https://digital-wallet-40297-default-rtdb.europe-west1.firebasedatabase.app",
+  projectId: "digital-wallet-40297"
+};
+
+const app = initializeApp(firebaseConfig);
+const auth = getAuth(app);
+const db = getDatabase(app);
+
+let currentUser;
+
+function showToast(msg, success=true){
+  const toast = document.getElementById("toast");
+  toast.innerText = msg;
+  toast.style.display = "block";
+  toast.style.border = success ? "2px solid #10b981" : "2px solid red";
+  setTimeout(()=> toast.style.display="none", 3000);
+}
+
+function copyText(val){
+  navigator.clipboard.writeText(val);
+  showToast("Copied to clipboard");
+}
+
+function formatTime(ms){
+  const total = Math.max(ms,0);
+  const days = Math.floor(total / (1000*60*60*24));
+  const hours = Math.floor((total % (1000*60*60*24))/(1000*60*60));
+  const minutes = Math.floor((total % (1000*60*60))/(1000*60));
+  const seconds = Math.floor((total % (1000*60))/1000);
+  return `${days}d ${hours}h ${minutes}m ${seconds}s`;
+}
+
+onAuthStateChanged(auth, user => {
+  if(!user){ window.location.href="login.html"; return; }
+  currentUser = user;
+
+  const investmentsRef = ref(db, `investments/${user.uid}`);
+  const tradesRef = ref(db, `trades/${user.uid}`);
+
+  // Active Investments
+  onValue(investmentsRef, snapshot => {
+    const activeDiv = document.getElementById("activeInvestments");
+    activeDiv.innerHTML = "";
+    snapshot.forEach(child => {
+      const inv = child.val();
+      if(inv.status==="active"){
+        const div = document.createElement("div");
+        div.className = "bg-slate-900 p-3 rounded flex flex-col justify-between";
+        const start = inv.startTime;
+        const durationMs = 7*24*60*60*1000;
+
+        div.innerHTML = `
+          <div class="flex justify-between items-center">
+            <div>
+              <div class="font-semibold">${inv.planName}</div>
+              <div class="text-gray-400">Amount: $${inv.amount} | ROI: ${inv.roi}% | Payout: $${inv.payout}</div>
+            </div>
+            <div class="copy" onclick="copyText('${inv.planName} - $${inv.amount}')">Copy</div>
+          </div>
+          <div class="progress-bar-container mt-2">
+            <div class="progress-bar" id="progress-${child.key}"></div>
+          </div>
+          <div class="text-gray-400 text-xs mt-1" id="time-${child.key}"></div>
+        `;
+
+        activeDiv.appendChild(div);
+
+        const progressEl = div.querySelector(".progress-bar");
+        const timeEl = div.querySelector(`#time-${child.key}`);
+
+        function updateProgress(){
+          const elapsed = Date.now() - start;
+          const percent = Math.min((elapsed/durationMs)*100,100);
+          progressEl.style.width = percent+"%";
+          timeEl.innerText = "Time remaining: "+formatTime((start+durationMs)-Date.now());
+          if(percent<100) requestAnimationFrame(updateProgress);
+        }
+        updateProgress();
+      }
+    });
+    if(!activeDiv.hasChildNodes()) activeDiv.innerHTML="<p class='text-gray-400'>No active investments</p>";
+  });
+
+  // Ongoing Trades with exact duration
+  onValue(tradesRef, snapshot => {
+    const tradesDiv = document.getElementById("trades");
+    tradesDiv.innerHTML = "";
+
+    let hasTrades = false;
+    snapshot.forEach(child => {
+      const trade = child.val();
+      hasTrades = true;
+
+      const div = document.createElement("div");
+      div.className = "bg-slate-900 p-3 rounded flex flex-col justify-between";
+
+      const start = trade.startTime || Date.now();
+      const durationMs = trade.durationMs || 7*24*60*60*1000; // exact trade duration if available
+
+      div.innerHTML = `
+        <div class="flex justify-between items-center">
+          <div>
+            <div class="font-semibold">${trade.robotName}</div>
+            <div class="text-gray-400">Pair: ${trade.pair} | Invested: $${trade.amount} | Current: $${trade.currentValue} | Status: ${trade.status}</div>
+          </div>
+          <div class="copy" onclick="copyText('${trade.robotName} - $${trade.amount}')">Copy</div>
+        </div>
+        <div class="progress-bar-container mt-2">
+          <div class="progress-bar" id="trade-progress-${child.key}"></div>
+        </div>
+        <div class="text-gray-400 text-xs mt-1" id="trade-time-${child.key}"></div>
+      `;
+
+      tradesDiv.appendChild(div);
+
+      const progressEl = div.querySelector(".progress-bar");
+      const timeEl = div.querySelector(`#trade-time-${child.key}`);
+
+      function updateTradeProgress(){
+        const elapsed = Date.now() - start;
+        const percent = Math.min((elapsed/durationMs)*100,100);
+        progressEl.style.width = percent+"%";
+        timeEl.innerText = "Time elapsed: "+formatTime(elapsed)+" / "+formatTime(durationMs);
+        if(percent<100) requestAnimationFrame(updateTradeProgress);
+      }
+      updateTradeProgress();
+    });
+
+    if(!hasTrades) tradesDiv.innerHTML="<p class='text-gray-400'>No trades yet</p>";
+  });
+
+});
+</script>
+</body>
+  </html>
