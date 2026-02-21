@@ -4,9 +4,6 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Withdraw - Quantum Apex</title>
-<script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js"></script>
-<script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js"></script>
-<script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-database.js"></script>
 <script src="https://cdn.tailwindcss.com"></script>
 <style>
 body { background:#0f172a; font-family: 'Inter', sans-serif; }
@@ -15,15 +12,15 @@ body { background:#0f172a; font-family: 'Inter', sans-serif; }
   transform:translate(-50%,-50%);
   background:#1e293b; padding:20px 40px;
   border-radius:12px; box-shadow:0 0 25px rgba(16,185,129,0.4);
-  display:none; z-index:1000;
+  display:none; z-index:1000; color:white; text-align:center; font-weight:bold;
 }
 </style>
 </head>
 <body class="text-white min-h-screen flex flex-col">
 
 <nav class="flex justify-between items-center px-6 py-4 bg-slate-900 shadow-lg">
-<h1 class="text-2xl font-bold text-emerald-400">Withdraw Funds</h1>
-<button onclick="window.location.href='dashboard.html'" class="bg-gray-600 px-4 py-2 rounded hover:bg-gray-700">Back</button>
+  <h1 class="text-2xl font-bold text-emerald-400">Withdraw Funds</h1>
+  <button onclick="window.location.href='dashboard.html'" class="bg-gray-600 px-4 py-2 rounded hover:bg-gray-700">Back</button>
 </nav>
 
 <section class="flex-1 p-6 space-y-6">
@@ -31,7 +28,22 @@ body { background:#0f172a; font-family: 'Inter', sans-serif; }
 <div class="bg-slate-800 p-6 rounded-2xl space-y-4">
   <h2 class="text-xl font-semibold mb-2">Enter Withdrawal Amount</h2>
   <input id="withdrawAmount" type="number" placeholder="Amount" class="w-full p-3 rounded bg-slate-700">
-  <button onclick="makeWithdraw()" class="w-full bg-yellow-500 py-3 rounded hover:bg-yellow-600 font-semibold">Withdraw Now</button>
+  
+  <h3 class="text-lg font-semibold mt-4">Withdrawal Method</h3>
+  <select id="withdrawMethod" class="w-full p-3 rounded bg-slate-700">
+    <option value="mobile">Mobile Money</option>
+    <option value="crypto">Crypto</option>
+  </select>
+  
+  <div id="mobileFields" class="mt-4">
+    <input id="mobileNumber" type="text" placeholder="e.g +254712345678" class="w-full p-3 rounded bg-slate-700">
+  </div>
+  
+  <div id="cryptoFields" class="mt-4" style="display:none;">
+    <input id="cryptoAddress" type="text" placeholder="Enter Crypto Address" class="w-full p-3 rounded bg-slate-700">
+  </div>
+
+  <button onclick="makeWithdraw()" class="w-full bg-yellow-500 py-3 rounded hover:bg-yellow-600 font-semibold mt-4">Withdraw Now</button>
 </div>
 
 <div class="bg-slate-800 p-6 rounded-2xl">
@@ -41,17 +53,17 @@ body { background:#0f172a; font-family: 'Inter', sans-serif; }
 
 <div class="bg-slate-800 p-6 rounded-2xl">
   <h3 class="font-semibold mb-2">Withdrawal Instructions</h3>
-  <p>Funds will be sent to your registered phone number. Ensure your mobile money account is active.</p>
+  <p>Funds will be sent to your registered mobile money account or crypto wallet. Minimum withdrawal: $10. Ensure your account is active.</p>
 </div>
 
 </section>
 
-<div id="toast" class="toast text-center"></div>
+<div id="toast" class="toast"></div>
 
 <script type="module">
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
 import { getAuth, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js";
-import { getDatabase, ref, onValue, update } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-database.js";
+import { getDatabase, ref, onValue, update, push } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-database.js";
 
 const firebaseConfig = {
     apiKey: "AIzaSyDaEphuY2kQue8m-20DDs68JDgQirAycBE",
@@ -67,6 +79,8 @@ const app = initializeApp(firebaseConfig);
 const auth = getAuth(app);
 const db = getDatabase(app);
 
+let currentUser, userData;
+
 function showToast(msg, success=true){
   const toast = document.getElementById("toast");
   toast.innerText = msg;
@@ -75,33 +89,88 @@ function showToast(msg, success=true){
   setTimeout(()=> toast.style.display="none",3000);
 }
 
-let currentUser, userData;
+// Show/Hide input fields depending on withdrawal method
+const methodSelect = document.getElementById("withdrawMethod");
+methodSelect.addEventListener("change", ()=>{
+  const method = methodSelect.value;
+  document.getElementById("mobileFields").style.display = method==="mobile" ? "block" : "none";
+  document.getElementById("cryptoFields").style.display = method==="crypto" ? "block" : "none";
+});
 
-onAuthStateChanged(auth, user=>{
-  if(user){
-    currentUser = user;
-    const userRef = ref(db, "users/"+user.uid);
-    onValue(userRef, snapshot=>{
-      if(snapshot.exists()){
-        userData = snapshot.val();
-        document.getElementById("currentBalance").innerText = `$${userData.mainBalance.toFixed(2)}`;
-      }
-    });
-  }else{ window.location.href="login.html"; }
+onAuthStateChanged(auth, user => {
+  if(!user) return window.location.href="login.html";
+  currentUser = user;
+  
+  const userRef = ref(db, "users/"+user.uid);
+  onValue(userRef, snapshot => {
+    if(snapshot.exists()){
+      userData = snapshot.val();
+      document.getElementById("currentBalance").innerText = `$${userData.mainBalance.toFixed(2)}`;
+    }
+  });
 });
 
 window.makeWithdraw = async function(){
   const amt = parseFloat(document.getElementById("withdrawAmount").value);
+  const method = methodSelect.value;
+
+  // Check amount
   if(isNaN(amt) || amt <= 0){ showToast("Enter a valid amount", false); return; }
+  if(amt < 10){ showToast("Minimum withdrawal is $10", false); return; }
+
+  // Validate details
+  let details = "";
+  if(method==="mobile"){
+    const mobile = document.getElementById("mobileNumber").value.trim();
+    if(!mobile){ showToast("Please enter mobile money number", false); return; }
+    if(!mobile.startsWith("+") || mobile.length<10){
+      showToast("Enter valid mobile number with country code", false); return;
+    }
+    details = mobile;
+  } else if(method==="crypto"){
+    const cryptoAddr = document.getElementById("cryptoAddress").value.trim();
+    if(!cryptoAddr){ showToast("Please enter the wallet address", false); return; }
+    if(cryptoAddr.length < 10){ showToast("Enter a valid crypto address", false); return; }
+    details = cryptoAddr;
+  }
+
+  // Check referrals
+  let referrals = 0;
+  if(userData.referredByList) referrals = Object.keys(userData.referredByList).length;
+  else if(userData.referralCount) referrals = userData.referralCount;
+
+  if(referrals < 2){
+    showToast("You must have at least two or more referrals to withdraw", false);
+    setTimeout(()=> window.location.href="package.html", 2000);
+    return;
+  }
+
+  // Check balance
   if(!userData || amt > userData.mainBalance){ showToast("Insufficient balance", false); return; }
 
+  // Deduct balance & record withdrawal
   const newBalance = userData.mainBalance - amt;
+
   try{
     await update(ref(db, "users/"+currentUser.uid), { mainBalance: newBalance });
-    showToast(`Withdrawal successful: $${amt}`);
+    const withdrawRef = push(ref(db, `withdrawals/${currentUser.uid}`));
+    await update(withdrawRef, {
+      amount: amt,
+      timestamp: Date.now(),
+      status: "pending",
+      method: method,
+      details: details
+    });
+
+    showToast("Your withdrawal has been submitted for approval");
     document.getElementById("withdrawAmount").value = "";
-  }catch(err){ showToast("Withdrawal failed", false); }
+    if(method==="mobile") document.getElementById("mobileNumber").value = "";
+    if(method==="crypto") document.getElementById("cryptoAddress").value = "";
+  }catch(err){
+    console.error(err);
+    showToast("Withdrawal failed", false);
+  }
 };
 </script>
 </body>
-</html>
+  </html>
