@@ -65,10 +65,11 @@ import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/fireba
 import { getAuth, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js";
 import { getDatabase, ref, onValue, update, push } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-database.js";
 
+// Use your database region
 const firebaseConfig = {
     apiKey: "AIzaSyDaEphuY2kQue8m-20DDs68JDgQirAycBE",
     authDomain: "digital-wallet-40297.firebaseapp.com",
-    databaseURL: "https://digital-wallet-40297-default-rtdb.firebaseio.com",
+    databaseURL: "https://digital-wallet-40297-default-rtdb.europe-west1.firebasedatabase.app",
     projectId: "digital-wallet-40297",
     storageBucket: "digital-wallet-40297.firebasestorage.app",
     messagingSenderId: "953454788272",
@@ -79,78 +80,83 @@ const app = initializeApp(firebaseConfig);
 const auth = getAuth(app);
 const db = getDatabase(app);
 
-let currentUser, userData;
+let currentUser = null;
+let userData = null;
 
 function showToast(msg, success=true){
   const toast = document.getElementById("toast");
   toast.innerText = msg;
-  toast.style.display="block";
+  toast.style.display = "block";
   toast.style.border = success ? "2px solid #10b981" : "2px solid red";
-  setTimeout(()=> toast.style.display="none",3000);
+  setTimeout(()=> toast.style.display="none", 3000);
 }
 
-// Toggle fields based on method
+// Toggle input fields based on withdrawal method
 const methodSelect = document.getElementById("withdrawMethod");
-methodSelect.addEventListener("change", ()=>{
+methodSelect.addEventListener("change", () => {
   const method = methodSelect.value;
-  document.getElementById("mobileFields").style.display = method==="mobile" ? "block" : "none";
-  document.getElementById("cryptoFields").style.display = method==="crypto" ? "block" : "none";
+  document.getElementById("mobileFields").style.display = method === "mobile" ? "block" : "none";
+  document.getElementById("cryptoFields").style.display = method === "crypto" ? "block" : "none";
 });
 
+// Listen for auth state and real-time data
 onAuthStateChanged(auth, user => {
-  if(!user) return window.location.href="login.html";
+  if(!user) return window.location.href = "login.html";
   currentUser = user;
-  const userRef = ref(db, "users/"+user.uid);
+
+  const userRef = ref(db, "users/" + user.uid);
   onValue(userRef, snapshot => {
     if(snapshot.exists()){
       userData = snapshot.val();
       document.getElementById("currentBalance").innerText = `$${userData.mainBalance.toFixed(2)}`;
+    } else {
+      showToast("User data not found.", false);
     }
   });
 });
 
-window.makeWithdraw = async function(){
+window.makeWithdraw = async function() {
   if(!userData){ showToast("User data not loaded. Try again.", false); return; }
 
   const amt = parseFloat(document.getElementById("withdrawAmount").value);
   const method = methodSelect.value;
 
-  // 1. Validate amount
+  // 1️⃣ Validate amount
   if(isNaN(amt) || amt <= 0){ showToast("Enter a valid amount", false); return; }
   if(amt < 10){ showToast("Minimum withdrawal is $10", false); return; }
 
-  // 2. Validate details
+  // 2️⃣ Validate details
   let details = "";
-  if(method==="mobile"){
+  if(method === "mobile") {
     const mobile = document.getElementById("mobileNumber").value.trim();
     if(!mobile){ showToast("Please enter mobile money number", false); return; }
-    if(!mobile.startsWith("+") || mobile.length<10){ showToast("Enter valid mobile number with country code", false); return; }
+    if(!mobile.startsWith("+") || mobile.length < 10){ showToast("Enter valid mobile number with country code", false); return; }
     details = mobile;
-  } else if(method==="crypto"){
+  } else if(method === "crypto") {
     const cryptoAddr = document.getElementById("cryptoAddress").value.trim();
     if(!cryptoAddr){ showToast("Please enter the wallet address", false); return; }
-    if(cryptoAddr.length<10){ showToast("Enter a valid crypto address", false); return; }
+    if(cryptoAddr.length < 10){ showToast("Enter a valid crypto address", false); return; }
     details = cryptoAddr;
   }
 
-  // 3. Validate balance
+  // 3️⃣ Check balance
   if(amt > userData.mainBalance){ showToast("Insufficient balance", false); return; }
 
-  // 4. Validate referrals
+  // 4️⃣ Check referrals
   let referrals = 0;
   if(userData.referredByList) referrals = Object.keys(userData.referredByList).length;
   else if(userData.referralCount) referrals = userData.referralCount;
 
   if(referrals < 2){
     showToast("You must have at least two or more referrals to withdraw", false);
-    setTimeout(()=> window.location.href="package.html", 2000);
+    setTimeout(() => window.location.href = "package.html", 2000);
     return;
   }
 
-  // 5. Deduct balance & record withdrawal
+  // 5️⃣ Deduct balance and record withdrawal
   const newBalance = userData.mainBalance - amt;
-  try{
-    await update(ref(db, "users/"+currentUser.uid), { mainBalance: newBalance });
+  try {
+    await update(ref(db, "users/" + currentUser.uid), { mainBalance: newBalance });
     const withdrawRef = push(ref(db, `withdrawals/${currentUser.uid}`));
     await update(withdrawRef, {
       amount: amt,
@@ -159,11 +165,18 @@ window.makeWithdraw = async function(){
       method: method,
       details: details
     });
+
     showToast("Your withdrawal has been submitted for approval");
+
+    // Clear inputs
     document.getElementById("withdrawAmount").value = "";
-    if(method==="mobile") document.getElementById("mobileNumber").value = "";
-    if(method==="crypto") document.getElementById("cryptoAddress").value = "";
-  } catch(err){
+    if(method === "mobile") document.getElementById("mobileNumber").value = "";
+    if(method === "crypto") document.getElementById("cryptoAddress").value = "";
+
+    // Update balance immediately
+    document.getElementById("currentBalance").innerText = `$${newBalance.toFixed(2)}`;
+
+  } catch(err) {
     console.error(err);
     showToast("Withdrawal failed", false);
   }
