@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Profile - Quantum Apex</title>
+<title>Profile – Quantum Apex</title>
 
 <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js"></script>
@@ -17,20 +17,23 @@ body{
   display:flex;
   align-items:center;
   justify-content:center;
-  background:#0f172a;
-  font-family:Inter,sans-serif;
-  color:white;
+  background:radial-gradient(circle at top, #1e293b, #020617);
+  font-family:Inter,system-ui,sans-serif;
+  color:#e5e7eb;
   overflow:hidden;
 }
 
-/* Card */
+/* Compact Card */
 .container{
   width:100%;
-  max-width:380px;
-  padding:1.5rem;
-  background:linear-gradient(135deg,#1e293b,#111827);
-  border-radius:16px;
-  box-shadow:0 8px 28px rgba(0,0,0,.6);
+  max-width:360px;
+  padding:1.6rem 1.5rem;
+  background:linear-gradient(180deg,#020617,#020617cc);
+  border-radius:18px;
+  border:1px solid #1f2937;
+  box-shadow:
+    0 15px 35px rgba(0,0,0,.7),
+    inset 0 1px 0 rgba(255,255,255,.03);
 }
 
 /* Header */
@@ -42,100 +45,108 @@ body{
 .profile-title{
   text-align:center;
   font-size:1.6rem;
-  font-weight:700;
+  font-weight:800;
   color:#10b981;
-  margin-bottom:1.2rem;
+  letter-spacing:.3px;
+  margin-bottom:1.5rem;
 }
 
 /* Fields */
 .field-wrapper{
   position:relative;
   margin-bottom:1rem;
-  display:flex;
-  flex-direction:column;
 }
 label{
+  display:block;
+  font-size:.75rem;
   font-weight:600;
-  margin-bottom:.25rem;
+  letter-spacing:.3px;
   color:#94a3b8;
-  font-size:.85rem;
+  margin-bottom:.3rem;
+  text-transform:uppercase;
 }
 input{
   width:100%;
   height:40px;
-  padding:.55rem .75rem;
-  border-radius:10px;
+  padding:0 .8rem;
+  border-radius:12px;
   background:#020617;
   border:1px solid #334155;
-  color:white;
+  color:#f9fafb;
   font-size:.95rem;
+  transition:border .2s, box-shadow .2s;
 }
-input[disabled]{
-  background:#1f2937;
-  cursor:not-allowed;
+input:focus{
+  outline:none;
+  border-color:#10b981;
+  box-shadow:0 0 0 2px rgba(16,185,129,.15);
 }
+input[disabled]{ background:#020617; color:#9ca3af; }
 
 /* Edit icon */
 .edit-icon{
   position:absolute;
-  right:10px;
+  right:12px;
   top:50%;
   transform:translateY(-50%);
   cursor:pointer;
   color:#10b981;
   font-size:1rem;
+  opacity:.75;
 }
+.edit-icon:hover{opacity:1}
 
 /* Divider */
 .action-divider{
   height:1px;
   width:100%;
-  background:linear-gradient(to right, transparent, #334155, transparent);
-  margin:1.2rem 0 1rem;
+  background:linear-gradient(to right, transparent, #1f2937, transparent);
+  margin:1.5rem 0 1rem;
 }
 
 /* Buttons */
 button{
-  height:40px;
-  border-radius:10px;
+  height:42px;
   width:100%;
+  border-radius:12px;
   font-weight:700;
+  letter-spacing:.3px;
   font-size:.9rem;
-  transition:all .2s ease;
+  transition:all .25s ease;
 }
-
 #saveBtn{
-  background:#10b981;
-  color:white;
+  background:linear-gradient(135deg,#10b981,#059669);
+  color:#ecfdf5;
+  box-shadow:0 8px 18px rgba(16,185,129,.25);
 }
 #saveBtn:hover{
-  background:#059669;
   transform:translateY(-1px);
+  box-shadow:0 12px 24px rgba(16,185,129,.35);
 }
-
 #logout{
+  margin-top:.8rem;
   background:transparent;
-  border:1px solid #ef4444;
-  color:#ef4444;
-  margin-top:.7rem;
+  border:1px solid #374151;
+  color:#9ca3af;
 }
 #logout:hover{
-  background:#ef4444;
-  color:white;
+  border-color:#ef4444;
+  color:#ef4444;
 }
 
 /* Toast */
 .toast{
   position:fixed;
-  bottom:1.2rem;
+  bottom:1.5rem;
   left:50%;
   transform:translateX(-50%);
   background:#020617;
-  padding:10px 22px;
-  border-radius:10px;
-  box-shadow:0 0 22px rgba(16,185,129,.4);
+  padding:12px 24px;
+  border-radius:12px;
+  box-shadow:0 15px 30px rgba(0,0,0,.7);
   display:none;
   font-weight:700;
+  letter-spacing:.3px;
   z-index:1000;
 }
 </style>
@@ -145,39 +156,39 @@ button{
 
 <div class="container">
   <div class="head-icon">🗣️</div>
-  <div class="profile-title">Profile</div>
+  <div class="profile-title">Account Profile</div>
 
   <div class="field-wrapper">
     <label>Account ID</label>
-    <input type="text" id="accountId" disabled>
+    <input id="accountId" disabled>
   </div>
 
   <div class="field-wrapper">
-    <label>Name</label>
-    <input type="text" id="name" disabled>
+    <label>Full Name</label>
+    <input id="name" disabled>
     <span class="edit-icon" id="editName">✎</span>
   </div>
 
   <div class="field-wrapper">
-    <label>Email</label>
-    <input type="email" id="email" disabled>
+    <label>Email Address</label>
+    <input id="email" disabled>
   </div>
 
   <div class="field-wrapper">
     <label>Phone Number</label>
-    <input type="text" id="phone" disabled>
+    <input id="phone" disabled>
     <span class="edit-icon" id="editPhone">✎</span>
   </div>
 
   <div class="field-wrapper">
     <label>Country</label>
-    <input type="text" id="country" disabled>
+    <input id="country" disabled>
   </div>
 
   <div class="action-divider"></div>
 
   <button id="saveBtn">Save Changes</button>
-  <button id="logout">Logout</button>
+  <button id="logout">Sign Out</button>
 </div>
 
 <div id="toast" class="toast"></div>
@@ -197,39 +208,28 @@ const app = initializeApp({
 const auth = getAuth(app);
 const db = getDatabase(app);
 
-const accountIdInput = document.getElementById("accountId");
-const nameInput = document.getElementById("name");
-const emailInput = document.getElementById("email");
-const phoneInput = document.getElementById("phone");
-const countryInput = document.getElementById("country");
-const saveBtn = document.getElementById("saveBtn");
-const logoutBtn = document.getElementById("logout");
+const accountId = document.getElementById("accountId");
+const name = document.getElementById("name");
+const email = document.getElementById("email");
+const phone = document.getElementById("phone");
+const country = document.getElementById("country");
 const toast = document.getElementById("toast");
 
-document.getElementById("editName").onclick = () => {
-  nameInput.disabled = false;
-  nameInput.focus();
-};
-document.getElementById("editPhone").onclick = () => {
-  phoneInput.disabled = false;
-  phoneInput.focus();
-};
+editName.onclick = () => { name.disabled=false; name.focus(); };
+editPhone.onclick = () => { phone.disabled=false; phone.focus(); };
 
 function showToast(msg, ok=true){
   toast.innerText = msg;
-  toast.style.display = "block";
+  toast.style.display="block";
   toast.style.color = ok ? "#10b981" : "#ef4444";
   setTimeout(()=>toast.style.display="none",3000);
 }
 
-function generateAccountId(uid){
-  return "QA-" + uid.slice(-6).toUpperCase();
-}
+function generateAccountId(uid){ return "QA-" + uid.slice(-6).toUpperCase(); }
 
 let userRef;
 onAuthStateChanged(auth,user=>{
   if(!user) location.href="login.html";
-
   userRef = ref(db,"users/"+user.uid);
 
   onValue(userRef,snap=>{
@@ -237,24 +237,22 @@ onAuthStateChanged(auth,user=>{
     const d = snap.val();
 
     if(!d.accountId){
-      const accId = generateAccountId(user.uid);
-      update(userRef,{ accountId: accId });
-      accountIdInput.value = accId;
-    }else{
-      accountIdInput.value = d.accountId;
-    }
+      const id=generateAccountId(user.uid);
+      update(userRef,{accountId:id});
+      accountId.value=id;
+    } else accountId.value=d.accountId;
 
-    nameInput.value = d.name || "";
-    emailInput.value = d.email || "";
-    phoneInput.value = d.phone || "";
-    countryInput.value = d.country || "";
+    name.value=d.name||"";
+    email.value=d.email||"";
+    phone.value=d.phone||"";
+    country.value=d.country||"";
   });
 });
 
 saveBtn.onclick=()=>{
   const updates={};
-  if(!nameInput.disabled) updates.name=nameInput.value.trim();
-  if(!phoneInput.disabled) updates.phone=phoneInput.value.trim();
+  if(!name.disabled) updates.name=name.value.trim();
+  if(!phone.disabled) updates.phone=phone.value.trim();
 
   if(!Object.keys(updates).length){
     showToast("No changes to save",false);
@@ -264,14 +262,14 @@ saveBtn.onclick=()=>{
   update(userRef,updates)
     .then(()=>{
       showToast("Profile updated");
-      nameInput.disabled=true;
-      phoneInput.disabled=true;
+      name.disabled=true;
+      phone.disabled=true;
     })
     .catch(()=>showToast("Update failed",false));
 };
 
-logoutBtn.onclick=()=>signOut(auth).then(()=>location.href="login.html");
+logout.onclick=()=>signOut(auth).then(()=>location.href="login.html");
 </script>
 
 </body>
-  </html>
+</html>
