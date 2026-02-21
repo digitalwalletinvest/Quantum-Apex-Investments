@@ -17,17 +17,15 @@ body { background:#0f172a; font-family: 'Inter', sans-serif; }
   transform: translate(-50%, -50%);
   background: #1e293b; padding: 20px 40px;
   border-radius: 12px; box-shadow: 0 0 25px rgba(16,185,129,0.4);
-  display: none; z-index: 1000; text-align:center;
+  display: none; z-index: 1000; text-align:center; color:white;
 }
 .copy {
-  background:#020617;
-  padding:8px;
-  border-radius:8px;
-  cursor:pointer;
-  word-break: break-all;
+  background:#020617; padding:8px; border-radius:8px;
+  cursor:pointer; word-break: break-all;
 }
 </style>
 </head>
+
 <a href="https://wa.me/254750858351" target="_blank"
    class="fixed bottom-6 right-6 bg-emerald-500 hover:bg-emerald-600
           text-white px-5 py-3 rounded-full shadow-lg
@@ -37,6 +35,7 @@ body { background:#0f172a; font-family: 'Inter', sans-serif; }
   </svg>
   <span class="font-semibold">Contact Support</span>
 </a>
+
 <body class="text-white min-h-screen flex flex-col">
 
 <nav class="flex justify-between items-center px-6 py-4 bg-slate-900 shadow-lg">
@@ -47,10 +46,16 @@ body { background:#0f172a; font-family: 'Inter', sans-serif; }
 <section class="flex-1 p-6 space-y-6">
 
 <div class="bg-slate-800 p-6 rounded-2xl space-y-4">
-  <h2 class="text-xl font-semibold mb-2">Enter Deposit Amount</h2>
-  <input id="depositAmount" type="number" placeholder="Amount" class="w-full p-3 rounded bg-slate-700">
-  <button onclick="makeDeposit()" class="w-full bg-emerald-500 py-3 rounded hover:bg-emerald-600 font-semibold">Deposit Now</button>
-  <p class="text-yellow-400 text-sm">⚠ Deposits are credited only after admin approval</p>
+  <h2 class="text-xl font-semibold mb-2">Deposit Method</h2>
+  <select id="depositMethod" class="w-full p-3 rounded bg-slate-700">
+    <option value="">Select Method</option>
+    <option value="phone">Mobile Money</option>
+    <option value="crypto">Crypto</option>
+  </select>
+
+  <div id="dynamicInput" class="mt-4"></div>
+
+  <button id="depositBtn" disabled class="w-full bg-emerald-500 py-3 rounded hover:bg-emerald-600 font-semibold mt-2 opacity-50 cursor-not-allowed">Deposit Now</button>
 </div>
 
 <div class="bg-slate-800 p-6 rounded-2xl space-y-3">
@@ -80,17 +85,24 @@ body { background:#0f172a; font-family: 'Inter', sans-serif; }
 <script type="module">
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
 import { getAuth, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js";
-import { getDatabase, ref, onValue, update } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-database.js";
+import { getDatabase, ref, onValue, push, set } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-database.js";
 
 const app = initializeApp({
   apiKey: "AIzaSyDaEphuY2kQue8m-20DDs68JDgQirAycBE",
   authDomain: "digital-wallet-40297.firebaseapp.com",
-  databaseURL: "https://digital-wallet-40297-default-rtdb.firebaseio.com",
+  databaseURL: "https://digital-wallet-40297-default-rtdb.europe-west1.firebasedatabase.app",
   projectId: "digital-wallet-40297"
 });
 
 const auth = getAuth(app);
 const db = getDatabase(app);
+
+function showToast(msg){
+  const toast = document.getElementById("toast");
+  toast.innerText = msg;
+  toast.style.display = "block";
+  setTimeout(()=>toast.style.display="none", 3000);
+}
 
 const USDT = "0xe5e959e57ae1937acf0dde128a8b7ee0aa970168";
 
@@ -122,8 +134,77 @@ const mobileInstructions = {
   "Ethiopia": "Dial *127# → International transfer → Kenya → Safaricom M-Pesa → 254707207201 (Langat Robert)"
 };
 
+// dynamic deposit input + button enable
+const depositMethodSelect = document.getElementById("depositMethod");
+const dynamicInput = document.getElementById("dynamicInput");
+const depositBtn = document.getElementById("depositBtn");
+
+depositMethodSelect.addEventListener("change", e=>{
+  const method = e.target.value;
+  dynamicInput.innerHTML = "";
+  depositBtn.disabled = true;
+  depositBtn.classList.add("opacity-50","cursor-not-allowed");
+
+  if(method === "phone"){
+    dynamicInput.innerHTML = `<input id="phoneNumber" type="text" placeholder="Enter phone number used to deposit" class="w-full p-3 rounded bg-slate-700">`;
+    const phoneInput = document.getElementById("phoneNumber");
+    phoneInput.addEventListener("input", ()=>{
+      if(phoneInput.value.trim() !== ""){
+        depositBtn.disabled = false;
+        depositBtn.classList.remove("opacity-50","cursor-not-allowed");
+      } else {
+        depositBtn.disabled = true;
+        depositBtn.classList.add("opacity-50","cursor-not-allowed");
+      }
+    });
+  } else if(method === "crypto"){
+    dynamicInput.innerHTML = `<p class="text-green-400 font-semibold">Crypto deposits are approved automatically</p>`;
+    depositBtn.disabled = false;
+    depositBtn.classList.remove("opacity-50","cursor-not-allowed");
+  }
+});
+
+// ✅ Deposit submission (fixed UID path)
+depositBtn.addEventListener("click", async ()=>{
+  const method = depositMethodSelect.value;
+  if(!auth.currentUser){
+    showToast("Please login first");
+    return;
+  }
+
+  const uid = auth.currentUser.uid;
+
+  if(method === "phone"){
+    const phone = document.getElementById("phoneNumber").value.trim();
+    if(!phone){ showToast("Enter phone number"); return; }
+
+    const depositRef = push(ref(db, `deposits/${uid}`)); // UID included in path
+    await set(depositRef,{
+      userId: uid,
+      method: "phone",
+      phone,
+      amount: 20,
+      timestamp: Date.now(),
+      status: "pending"
+    });
+    showToast("Deposit submitted for approval, refresh your account now");
+  } else if(method === "crypto"){
+    const depositRef = push(ref(db, `deposits/${uid}`)); // UID included in path
+    await set(depositRef,{
+      userId: uid,
+      method: "crypto",
+      amount: 0,
+      timestamp: Date.now(),
+      status: "approved"
+    });
+    showToast("Crypto deposit approved automatically");
+  }
+});
+
+// Deposit instructions
 document.getElementById("countrySelect").addEventListener("change", e=>{
   const c = e.target.value;
+  const instructions = document.getElementById("instructions");
   if(!c){ instructions.innerHTML=""; return; }
 
   instructions.innerHTML = `
@@ -131,20 +212,27 @@ document.getElementById("countrySelect").addEventListener("change", e=>{
       <h4 class="text-emerald-400 font-semibold">USDT (ERC20)</h4>
       <div class="copy" onclick="copyText('${USDT}')">${USDT}</div>
     </div>
-
-    ${mobileInstructions[c] ? `
+    ${mobileInstructions[c]?`
     <div>
       <h4 class="text-emerald-400 font-semibold">Mobile Money</h4>
       <div class="copy" onclick="copyText('${mobileInstructions[c]}')">${mobileInstructions[c]}</div>
-    </div>` : ""}
-
-    ${["South Africa","Zimbabwe","Botswana"].includes(c) ? `
+    </div>`:""}
+    ${["South Africa","Zimbabwe","Botswana"].includes(c)?`
     <div>
       <h4 class="text-emerald-400 font-semibold">Mukuru</h4>
       <pre class="copy" onclick="copyText(\`${mukuruDetails}\`)">${mukuruDetails}</pre>
-    </div>` : ""}
+    </div>`:""}
   `;
+});
+
+// Show balance
+onAuthStateChanged(auth, user=>{
+  if(!user) return;
+  const balanceRef = ref(db, `users/${user.uid}/mainBalance`);
+  onValue(balanceRef, snap=>{
+    document.getElementById("currentBalance").innerText = `$${snap.val() || 0}`;
+  });
 });
 </script>
 </body>
-</html>
+  </html>
