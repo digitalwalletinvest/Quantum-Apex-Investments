@@ -13,7 +13,11 @@
 <style>
 body { background:#0f172a; font-family:Inter,sans-serif; }
 
-.card { background:#1e293b; border-radius:14px; }
+.card { 
+  border-radius:14px; 
+  transition: transform 0.2s, box-shadow 0.2s;
+}
+.card:hover { transform: translateY(-2px); box-shadow: 0 8px 20px rgba(0,0,0,0.5); }
 
 .section-title{
   font-size:14px;
@@ -21,6 +25,8 @@ body { background:#0f172a; font-family:Inter,sans-serif; }
   color:#94a3b8;
   padding:10px 12px;
   background:#020617;
+  border-top-left-radius:14px;
+  border-top-right-radius:14px;
 }
 
 .menu{
@@ -40,29 +46,30 @@ body { background:#0f172a; font-family:Inter,sans-serif; }
   background:#334155;
   font-weight:600;
   color:white;
-  margin-bottom:4px;
+  margin-bottom:6px;
   transition: background 0.2s;
 }
-
-.menu button:hover{
-  background:#3b82f6;
-}
+.menu button:hover{ background:#3b82f6; }
 
 .hamburger div{
   width:25px;height:3px;background:white;margin:4px 0;border-radius:2px;
 }
 
-/* Cards buttons */
+/* Card buttons */
 .card-button {
-  padding: 8px 16px;
-  border-radius: 8px;
-  background: #3b82f6;
-  color: white;
+  padding: 10px 18px;
+  border-radius: 10px;
   font-weight:600;
-  transition: background 0.2s;
-  margin-top:8px;
+  transition: background 0.3s, transform 0.2s;
+  margin-top:10px;
+  display:inline-block;
 }
-.card-button:hover { background:#2563eb; }
+.card-button:hover { transform: translateY(-2px); }
+
+.robot-card { background: linear-gradient(135deg, #0f766e, #14b8a6); }
+.trade-card { background: linear-gradient(135deg, #1d4ed8, #3b82f6); }
+.invest-card { background: linear-gradient(135deg, #15803d, #22c55e); }
+.company-card { background: linear-gradient(135deg, #b45309, #f59e0b); }
 
 /* WhatsApp floating button */
 #whatsappBtn {
@@ -115,54 +122,51 @@ body { background:#0f172a; font-family:Inter,sans-serif; }
 
 <!-- BALANCES -->
 <div class="grid grid-cols-2 gap-4">
-  <div class="card p-4 text-center">
-    <p class="text-slate-400">Main Balance</p>
+  <div class="card p-4 text-center bg-gradient-to-br from-teal-800 to-teal-600">
+    <p class="text-slate-200">Main Balance</p>
     <p id="mainBalance" class="text-2xl text-emerald-400">$0.00</p>
   </div>
-  <div class="card p-4 text-center">
-    <p class="text-slate-400">Locked Balance</p>
+  <div class="card p-4 text-center bg-gradient-to-br from-yellow-800 to-yellow-600">
+    <p class="text-slate-200">Locked Balance</p>
     <p id="lockedBalance" class="text-2xl text-yellow-400">$0.00</p>
   </div>
 </div>
 
-<!-- ROBOT -->
-<div class="card overflow-hidden">
-  <div class="section-title">Futures</div>
-  <div class="p-4 bg-slate-800 border-b border-slate-600">
-    <p class="text-lg text-emerald-400 font-semibold">🤖 Quantum Apex Robot</p>
-    <p class="text-sm mt-1">
-      Price: <strong>$150</strong> · The Quantum Apex Robot is an AI-powered trading system designed to invest in Bitcoin, Forex, and Binary markets. Once activated, it executes automated trades on behalf of the user.
-      With our optimized AI algorithms, the robot can potentially generate ROI <strong class="text-emerald-400">Up to 200% in 7 days</strong>
-    </p>
-    <button onclick="location.href='earn.html'" class="mt-2 card-button">Activate Robot</button>
-  </div>
-
-  <!-- Trade Card -->
-  <div class="p-4 border-b border-slate-600">
-    <p class="text-lg font-semibold text-blue-400">Trade Now</p>
-    <p class="text-sm mt-1">
-      Use the Quantum Apex Robot to trade automatically and earn profits in as little as three days. The robot executes trades intelligently, giving you fast results.
-    </p>
-    <button onclick="location.href='earn.html'" class="card-button">Trade Now</button>
-  </div>
-
-  <!-- Invest Card -->
-  <div class="p-4 border-b border-slate-600">
-    <p class="text-lg font-semibold text-green-400">Invest Now</p>
-    <p class="text-sm mt-1">
-      Invest your funds with our platform and watch them grow in 7 days. Affordable investment options with predictable profits in one week.
-    </p>
-    <button onclick="location.href='investments.html'" class="card-button">Invest Now</button>
-  </div>
-
-  <!-- Company Info Card -->
-  <div class="p-4">
-    <p class="text-lg font-semibold text-amber-400">About Quantum Apex</p>
-    <p class="text-sm mt-1">
-      Quantum Apex is a cutting-edge investment platform that leverages AI to trade in crypto, forex, and futures markets. Safe, fast, and designed for high returns while keeping your experience simple.
-    </p>
-  </div>
+<!-- ROBOT CARD -->
+<div class="card overflow-hidden robot-card p-4">
+  <p class="text-lg font-semibold">🤖 Quantum Apex Robot</p>
+  <p class="text-sm mt-2">
+    Price: <strong>$150</strong> · The Quantum Apex Robot is an AI-powered trading system for Bitcoin, Forex, and Binary markets. Automated trades with potential ROI <strong>Up to 200% in 7 days</strong>.
+  </p>
+  <button onclick="location.href='earn.html'" class="card-button bg-white text-black">Activate Robot</button>
 </div>
+
+<!-- TRADE CARD -->
+<div class="card trade-card p-4">
+  <p class="text-lg font-semibold text-white">Trade Now</p>
+  <p class="text-sm mt-2 text-slate-200">
+    Use the Quantum Apex Robot to trade automatically and earn profits in as little as three days. Fast, intelligent, and fully automated.
+  </p>
+  <button onclick="location.href='earn.html'" class="card-button bg-white text-black">Trade Now</button>
+</div>
+
+<!-- INVEST CARD -->
+<div class="card invest-card p-4">
+  <p class="text-lg font-semibold text-white">Invest Now</p>
+  <p class="text-sm mt-2 text-slate-200">
+    Invest your funds and watch them grow in 7 days. Affordable and predictable profits for a week-long investment cycle.
+  </p>
+  <button onclick="location.href='investments.html'" class="card-button bg-white text-black">Invest Now</button>
+</div>
+
+<!-- COMPANY INFO CARD -->
+<div class="card company-card p-4">
+  <p class="text-lg font-semibold text-white">About Quantum Apex</p>
+  <p class="text-sm mt-2 text-slate-200">
+    Quantum Apex is a cutting-edge AI investment platform for crypto, forex, and futures markets. Safe, fast, and designed for high returns while keeping it simple.
+  </p>
+</div>
+
 </section>
 
 <!-- WhatsApp Floating Icon -->
@@ -202,4 +206,4 @@ onAuthStateChanged(auth,user=>{
 });
 </script>
 </body>
-    </html>
+  </html>
