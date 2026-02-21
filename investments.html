@@ -18,26 +18,30 @@ body { font-family: 'Inter', sans-serif; background: #0f172a; }
 }
 </style>
 </head>
+
 <body class="text-white min-h-screen flex flex-col">
 
 <nav class="flex justify-between items-center px-6 py-4 bg-slate-900 shadow-lg">
-<h1 class="text-2xl font-bold text-emerald-400">Investment Plans</h1>
-<button onclick="window.location.href='dashboard.html'" class="bg-gray-600 px-4 py-2 rounded hover:bg-gray-700">Back</button>
+  <h1 class="text-2xl font-bold text-emerald-400">Investment Plans</h1>
+  <button onclick="window.location.href='dashboard.html'"
+    class="bg-gray-600 px-4 py-2 rounded hover:bg-gray-700">Back</button>
 </nav>
 
 <section class="bg-slate-800 py-12 px-6 text-center flex-1">
-<h2 class="text-3xl font-bold mb-8">Investment Plans</h2>
-<div id="plansContainer" class="grid sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6"></div>
+  <h2 class="text-3xl font-bold mb-8">Investment Plans</h2>
+  <div id="plansContainer"
+    class="grid sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6"></div>
 </section>
 
-<div id="toast" class="toast text-center"></div>
+<div id="toast" class="toast"></div>
 
 <script type="module">
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
 import { getAuth, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js";
-import { getDatabase, ref, onValue, update, push, set } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-database.js";
+import { getDatabase, ref, onValue, update, push, set, get } 
+  from "https://www.gstatic.com/firebasejs/10.12.0/firebase-database.js";
 
-/* ================= FIREBASE CONFIG ================= */
+/* ================= FIREBASE ================= */
 const firebaseConfig = {
   apiKey: "AIzaSyDaEphuY2kQue8m-20DDs68JDgQirAycBE",
   authDomain: "digital-wallet-40297.firebaseapp.com",
@@ -55,47 +59,57 @@ const db = getDatabase(app);
 let currentUser = null;
 let userData = null;
 
+/* ================= TOAST ================= */
 function showToast(msg, success=true){
   const toast = document.getElementById("toast");
   toast.innerText = msg;
   toast.style.display = "block";
   toast.style.border = success ? "2px solid #10b981" : "2px solid red";
-  setTimeout(()=> toast.style.display="none", 3000);
+  setTimeout(() => toast.style.display="none", 3000);
 }
 
-/* ================= INVESTMENT PLANS ================= */
+/* ================= PLANS ================= */
 const plans = [
   { name: "Plan $20", min: 20, roi: 40, durationDays: 7 },
-  { name: "Plan $30", min: 30, roi: 40, durationDays: 7 },
   { name: "Plan $50", min: 50, roi: 40, durationDays: 7 },
   { name: "Plan $100", min: 100, roi: 40, durationDays: 7 },
-  { name: "Plan $200", min: 200, roi: 40, durationDays: 7 },
-  { name: "Plan $400", min: 400, roi: 40, durationDays: 7 },
-  { name: "Plan $600", min: 600, roi: 40, durationDays: 7 },
-  { name: "Plan $800", min: 800, roi: 40, durationDays: 7 },
-  { name: "Plan $1000", min: 1000, roi: 40, durationDays: 7 },
-  { name: "Plan $5000", min: 5000, roi: 40, durationDays: 7 },
-  { name: "Plan $10000", min: 10000, roi: 40, durationDays: 7 }
+  { name: "Plan $200", min: 200, roi: 40, durationDays: 7 }
 ];
 
 /* ================= AUTH ================= */
-onAuthStateChanged(auth, (user) => {
-  if (!user) {
-    document.getElementById("plansContainer").innerHTML =
-      "<h2 class='text-center text-red-400 text-xl col-span-full'>Please login first</h2>";
-    return;
-  }
+onAuthStateChanged(auth, async (user) => {
+  if (!user) return;
 
   currentUser = user;
   const userRef = ref(db, "users/" + user.uid);
 
-  onValue(userRef, (snapshot) => {
-    userData = snapshot.val() || { mainBalance: 0, lockedBalance: 0 };
-    if (!snapshot.exists()) set(userRef, userData);
+  const snap = await get(userRef);
+  if (!snap.exists()) {
+    await set(userRef, {
+      uid: user.uid,
+      name: user.displayName || "User",
+      email: user.email || "",
+      phone: "",
+      country: "",
+      mainBalance: 0,
+      lockedBalance: 0,
+      referralBalance: 0,
+      totalDeposited: 0,
+      totalProfit: 0,
+      totalWithdrawn: 0,
+      referralCode: "",
+      referredBy: null,
+      robotPurchased: false,
+      createdAt: Date.now()
+    });
+  }
 
-    checkMaturedInvestments();
+  onValue(userRef, snap => {
+    userData = snap.val();
     renderPlans();
   });
+
+  checkMaturedInvestmentsOnce();
 });
 
 /* ================= RENDER ================= */
@@ -104,84 +118,75 @@ function renderPlans(){
   container.innerHTML = "";
 
   plans.forEach(plan => {
-    const payout = (plan.min * (1 + plan.roi / 100)).toFixed(2);
+    const payout = (plan.min * 1.4).toFixed(2);
     const div = document.createElement("div");
-    div.className = "bg-slate-900 p-6 rounded-2xl border border-emerald-500 flex flex-col justify-between";
 
+    div.className = "bg-slate-900 p-6 rounded-2xl border border-emerald-500";
     div.innerHTML = `
       <h3 class="text-xl font-semibold mb-2">${plan.name}</h3>
-      <p class="text-2xl font-bold mb-2">${plan.roi}% ROI</p>
-      <p class="text-gray-400 mb-2">${plan.durationDays} Days</p>
-      <p class="text-gray-400 mb-2">Minimum $${plan.min}</p>
-      <p class="text-emerald-400 font-semibold mb-4">Payout: $${payout}</p>
-      <button class="bg-emerald-500 px-4 py-2 rounded-full hover:bg-emerald-600 font-semibold">
-        Invest Now
+      <p>${plan.roi}% ROI</p>
+      <p>${plan.durationDays} Days</p>
+      <p>Min $${plan.min}</p>
+      <p class="text-emerald-400 font-bold">Payout $${payout}</p>
+      <button class="mt-4 bg-emerald-500 px-4 py-2 rounded">
+        Invest
       </button>
     `;
 
-    div.querySelector("button").addEventListener("click", ()=> invest(plan));
+    div.querySelector("button").onclick = () => invest(plan);
     container.appendChild(div);
   });
 }
 
 /* ================= INVEST ================= */
 async function invest(plan){
-  if(!userData || userData.mainBalance < plan.min){
-    showToast("Investments failed: insufficient balance", false);
+  if (userData.mainBalance < plan.min) {
+    showToast("Insufficient balance", false);
     return;
   }
 
-  const newMain = userData.mainBalance - plan.min;
-  const newLocked = (userData.lockedBalance || 0) + plan.min;
+  const invRef = push(ref(db, `investments/${currentUser.uid}`));
 
-  try{
-    await update(ref(db, "users/"+currentUser.uid), {
-      mainBalance: newMain,
-      lockedBalance: newLocked
-    });
+  await update(ref(db, "users/" + currentUser.uid), {
+    mainBalance: userData.mainBalance - plan.min,
+    lockedBalance: (userData.lockedBalance || 0) + plan.min
+  });
 
-    const invRef = push(ref(db, `investments/${currentUser.uid}`));
-    await set(invRef, {
-      planName: plan.name,
-      amount: plan.min,
-      roi: plan.roi,
-      status: "active",
-      startTime: Date.now(),
-      durationDays: plan.durationDays,
-      payout: plan.min * (1 + plan.roi/100)
-    });
+  await set(invRef, {
+    planName: plan.name,
+    amount: plan.min,
+    roi: plan.roi,
+    status: "active",
+    startTime: Date.now(),
+    duration: `${plan.durationDays} days`,
+    payout: plan.min * 1.4
+  });
 
-    showToast(`Invested $${plan.min} in ${plan.name}`);
-  }catch(err){
-    console.error(err);
-    showToast("Investments failed", false);
-  }
+  showToast("Investment successful");
 }
 
-/* ================= AUTOMATIC MATURITY CHECK ================= */
-function checkMaturedInvestments() {
+/* ================= MATURITY (ONCE) ================= */
+async function checkMaturedInvestmentsOnce(){
   const invRef = ref(db, `investments/${currentUser.uid}`);
-  onValue(invRef, (snapshot) => {
-    snapshot.forEach(child => {
-      const inv = child.val();
-      const investId = child.key;
-      if(inv.status === "active") {
-        const durationMs = (inv.durationDays || 7) * 24 * 60 * 60 * 1000;
-        if(Date.now() >= inv.startTime + durationMs) {
-          // Add payout to mainBalance
-          const newBalance = (userData.mainBalance || 0) + inv.payout;
-          update(ref(db, "users/"+currentUser.uid), { 
-            mainBalance: newBalance,
-            lockedBalance: (userData.lockedBalance || 0) - inv.amount
-          });
+  const snap = await get(invRef);
+  if (!snap.exists()) return;
 
-          // Mark investment as matured
-          update(ref(db, `investments/${currentUser.uid}/${investId}`), { status: "matured" });
+  snap.forEach(child => {
+    const inv = child.val();
+    if (inv.status !== "active") return;
 
-          showToast(`Investment ${inv.planName} matured! $${inv.payout} added.`);
-        }
-      }
-    });
+    const days = Number(inv.duration.split(" ")[0]);
+    const matured = Date.now() >= inv.startTime + days*86400000;
+
+    if (matured) {
+      update(ref(db), {
+        [`users/${currentUser.uid}/mainBalance`]:
+          userData.mainBalance + inv.payout,
+        [`users/${currentUser.uid}/lockedBalance`]:
+          userData.lockedBalance - inv.amount,
+        [`investments/${currentUser.uid}/${child.key}/status`]: "matured"
+      });
+    }
   });
 }
 </script>
