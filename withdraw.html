@@ -89,7 +89,7 @@ function showToast(msg, success=true){
   setTimeout(()=> toast.style.display="none",3000);
 }
 
-// Show/Hide input fields depending on withdrawal method
+// Toggle fields based on method
 const methodSelect = document.getElementById("withdrawMethod");
 methodSelect.addEventListener("change", ()=>{
   const method = methodSelect.value;
@@ -100,7 +100,6 @@ methodSelect.addEventListener("change", ()=>{
 onAuthStateChanged(auth, user => {
   if(!user) return window.location.href="login.html";
   currentUser = user;
-  
   const userRef = ref(db, "users/"+user.uid);
   onValue(userRef, snapshot => {
     if(snapshot.exists()){
@@ -111,30 +110,33 @@ onAuthStateChanged(auth, user => {
 });
 
 window.makeWithdraw = async function(){
+  if(!userData){ showToast("User data not loaded. Try again.", false); return; }
+
   const amt = parseFloat(document.getElementById("withdrawAmount").value);
   const method = methodSelect.value;
 
-  // Check amount
+  // 1. Validate amount
   if(isNaN(amt) || amt <= 0){ showToast("Enter a valid amount", false); return; }
   if(amt < 10){ showToast("Minimum withdrawal is $10", false); return; }
 
-  // Validate details
+  // 2. Validate details
   let details = "";
   if(method==="mobile"){
     const mobile = document.getElementById("mobileNumber").value.trim();
     if(!mobile){ showToast("Please enter mobile money number", false); return; }
-    if(!mobile.startsWith("+") || mobile.length<10){
-      showToast("Enter valid mobile number with country code", false); return;
-    }
+    if(!mobile.startsWith("+") || mobile.length<10){ showToast("Enter valid mobile number with country code", false); return; }
     details = mobile;
   } else if(method==="crypto"){
     const cryptoAddr = document.getElementById("cryptoAddress").value.trim();
     if(!cryptoAddr){ showToast("Please enter the wallet address", false); return; }
-    if(cryptoAddr.length < 10){ showToast("Enter a valid crypto address", false); return; }
+    if(cryptoAddr.length<10){ showToast("Enter a valid crypto address", false); return; }
     details = cryptoAddr;
   }
 
-  // Check referrals
+  // 3. Validate balance
+  if(amt > userData.mainBalance){ showToast("Insufficient balance", false); return; }
+
+  // 4. Validate referrals
   let referrals = 0;
   if(userData.referredByList) referrals = Object.keys(userData.referredByList).length;
   else if(userData.referralCount) referrals = userData.referralCount;
@@ -145,12 +147,8 @@ window.makeWithdraw = async function(){
     return;
   }
 
-  // Check balance
-  if(!userData || amt > userData.mainBalance){ showToast("Insufficient balance", false); return; }
-
-  // Deduct balance & record withdrawal
+  // 5. Deduct balance & record withdrawal
   const newBalance = userData.mainBalance - amt;
-
   try{
     await update(ref(db, "users/"+currentUser.uid), { mainBalance: newBalance });
     const withdrawRef = push(ref(db, `withdrawals/${currentUser.uid}`));
@@ -161,16 +159,15 @@ window.makeWithdraw = async function(){
       method: method,
       details: details
     });
-
     showToast("Your withdrawal has been submitted for approval");
     document.getElementById("withdrawAmount").value = "";
     if(method==="mobile") document.getElementById("mobileNumber").value = "";
     if(method==="crypto") document.getElementById("cryptoAddress").value = "";
-  }catch(err){
+  } catch(err){
     console.error(err);
     showToast("Withdrawal failed", false);
   }
 };
 </script>
 </body>
-  </html>
+</html>
