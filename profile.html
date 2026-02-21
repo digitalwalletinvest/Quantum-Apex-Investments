@@ -11,38 +11,132 @@
 <script src="https://cdn.tailwindcss.com"></script>
 
 <style>
-body { background:#0f172a; font-family:Inter,sans-serif; color:white; }
-.container { max-width: 500px; margin: 2rem auto; padding: 2rem; background:#1e293b; border-radius:14px; }
-.field-wrapper { position: relative; margin-bottom: 1.5rem; }
-input, select { width: 100%; padding: 0.75rem; border-radius: 8px; background:#0f172a; color:white; border:1px solid #334155; }
-input[disabled] { background:#334155; cursor:not-allowed; }
-button { padding: 0.75rem; border-radius: 8px; width:100%; font-weight:bold; color:white; margin-top:1rem; }
-#saveBtn { background:#10b981; margin-bottom:1rem; }
-#saveBtn:hover { background:#059669; cursor:pointer; }
-#logout { background:#ef4444; }
-#logout:hover { background:#dc2626; cursor:pointer; }
-.toast {
-  position: fixed;
-  bottom: 2rem;
-  left: 50%;
-  transform: translateX(-50%);
-  background:#1e293b;
-  padding: 15px 30px;
-  border-radius: 12px;
-  box-shadow: 0 0 20px rgba(16,185,129,0.5);
-  display:none;
-  font-weight:bold;
+body{
+  margin:0;
+  min-height:100vh;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  background:#0f172a;
+  font-family:Inter,sans-serif;
   color:white;
-  z-index: 1000;
+  overflow:hidden;
 }
-.edit-icon {
-  position: absolute;
-  right: 10px;
-  top: 50%;
-  transform: translateY(-50%);
-  cursor: pointer;
-  color: #10b981;
-  font-size: 1rem;
+
+/* Card */
+.container{
+  width:100%;
+  max-width:380px;
+  padding:1.5rem;
+  background:linear-gradient(135deg,#1e293b,#111827);
+  border-radius:16px;
+  box-shadow:0 8px 28px rgba(0,0,0,.6);
+}
+
+/* Header */
+.head-icon{
+  font-size:2.5rem;
+  text-align:center;
+  margin-bottom:.2rem;
+}
+.profile-title{
+  text-align:center;
+  font-size:1.6rem;
+  font-weight:700;
+  color:#10b981;
+  margin-bottom:1.2rem;
+}
+
+/* Fields */
+.field-wrapper{
+  position:relative;
+  margin-bottom:1rem;
+  display:flex;
+  flex-direction:column;
+}
+label{
+  font-weight:600;
+  margin-bottom:.25rem;
+  color:#94a3b8;
+  font-size:.85rem;
+}
+input{
+  width:100%;
+  height:40px;
+  padding:.55rem .75rem;
+  border-radius:10px;
+  background:#020617;
+  border:1px solid #334155;
+  color:white;
+  font-size:.95rem;
+}
+input[disabled]{
+  background:#1f2937;
+  cursor:not-allowed;
+}
+
+/* Edit icon */
+.edit-icon{
+  position:absolute;
+  right:10px;
+  top:50%;
+  transform:translateY(-50%);
+  cursor:pointer;
+  color:#10b981;
+  font-size:1rem;
+}
+
+/* Divider */
+.action-divider{
+  height:1px;
+  width:100%;
+  background:linear-gradient(to right, transparent, #334155, transparent);
+  margin:1.2rem 0 1rem;
+}
+
+/* Buttons */
+button{
+  height:40px;
+  border-radius:10px;
+  width:100%;
+  font-weight:700;
+  font-size:.9rem;
+  transition:all .2s ease;
+}
+
+#saveBtn{
+  background:#10b981;
+  color:white;
+}
+#saveBtn:hover{
+  background:#059669;
+  transform:translateY(-1px);
+}
+
+#logout{
+  background:transparent;
+  border:1px solid #ef4444;
+  color:#ef4444;
+  margin-top:.7rem;
+}
+#logout:hover{
+  background:#ef4444;
+  color:white;
+}
+
+/* Toast */
+.toast{
+  position:fixed;
+  bottom:1.2rem;
+  left:50%;
+  transform:translateX(-50%);
+  background:#020617;
+  padding:10px 22px;
+  border-radius:10px;
+  box-shadow:0 0 22px rgba(16,185,129,.4);
+  display:none;
+  font-weight:700;
+  z-index:1000;
 }
 </style>
 </head>
@@ -50,31 +144,39 @@ button { padding: 0.75rem; border-radius: 8px; width:100%; font-weight:bold; col
 <body>
 
 <div class="container">
-  <h2 class="text-2xl font-bold mb-6 text-center text-emerald-400">Profile</h2>
+  <div class="head-icon">🗣️</div>
+  <div class="profile-title">Profile</div>
 
   <div class="field-wrapper">
-    <label for="name">Name</label>
+    <label>Account ID</label>
+    <input type="text" id="accountId" disabled>
+  </div>
+
+  <div class="field-wrapper">
+    <label>Name</label>
     <input type="text" id="name" disabled>
     <span class="edit-icon" id="editName">✎</span>
   </div>
 
   <div class="field-wrapper">
-    <label for="email">Email</label>
+    <label>Email</label>
     <input type="email" id="email" disabled>
   </div>
 
   <div class="field-wrapper">
-    <label for="phone">Phone Number</label>
+    <label>Phone Number</label>
     <input type="text" id="phone" disabled>
     <span class="edit-icon" id="editPhone">✎</span>
   </div>
 
   <div class="field-wrapper">
-    <label for="country">Country</label>
+    <label>Country</label>
     <input type="text" id="country" disabled>
   </div>
 
-  <button id="saveBtn">Save Details</button>
+  <div class="action-divider"></div>
+
+  <button id="saveBtn">Save Changes</button>
   <button id="logout">Logout</button>
 </div>
 
@@ -85,80 +187,91 @@ import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/fireba
 import { getAuth, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js";
 import { getDatabase, ref, onValue, update } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-database.js";
 
-// Firebase config
 const app = initializeApp({
-  apiKey: "AIzaSyDaEphuY2kQue8m-20DDs68JDgQirAycBE",
-  authDomain: "digital-wallet-40297.firebaseapp.com",
-  databaseURL: "https://digital-wallet-40297-default-rtdb.europe-west1.firebasedatabase.app",
-  projectId: "digital-wallet-40297"
+  apiKey:"AIzaSyDaEphuY2kQue8m-20DDs68JDgQirAycBE",
+  authDomain:"digital-wallet-40297.firebaseapp.com",
+  databaseURL:"https://digital-wallet-40297-default-rtdb.europe-west1.firebasedatabase.app",
+  projectId:"digital-wallet-40297"
 });
 
 const auth = getAuth(app);
 const db = getDatabase(app);
 
-// UI Elements
+const accountIdInput = document.getElementById("accountId");
 const nameInput = document.getElementById("name");
 const emailInput = document.getElementById("email");
 const phoneInput = document.getElementById("phone");
 const countryInput = document.getElementById("country");
-const logoutBtn = document.getElementById("logout");
 const saveBtn = document.getElementById("saveBtn");
+const logoutBtn = document.getElementById("logout");
 const toast = document.getElementById("toast");
-const editName = document.getElementById("editName");
-const editPhone = document.getElementById("editPhone");
 
-// Toast function
-function showToast(msg, success=true){
+document.getElementById("editName").onclick = () => {
+  nameInput.disabled = false;
+  nameInput.focus();
+};
+document.getElementById("editPhone").onclick = () => {
+  phoneInput.disabled = false;
+  phoneInput.focus();
+};
+
+function showToast(msg, ok=true){
   toast.innerText = msg;
   toast.style.display = "block";
-  toast.style.color = success ? "#10b981" : "#ef4444";
-  setTimeout(()=>{ toast.style.display="none"; }, 3000);
+  toast.style.color = ok ? "#10b981" : "#ef4444";
+  setTimeout(()=>toast.style.display="none",3000);
 }
 
-// Enable editing on clicking pen icon
-editName.onclick = () => { nameInput.disabled = false; nameInput.focus(); }
-editPhone.onclick = () => { phoneInput.disabled = false; phoneInput.focus(); }
+function generateAccountId(uid){
+  return "QA-" + uid.slice(-6).toUpperCase();
+}
 
-// Real-time Firebase sync
 let userRef;
-onAuthStateChanged(auth, user => {
-  if(!user) location.href = "login.html";
-  userRef = ref(db, "users/" + user.uid);
+onAuthStateChanged(auth,user=>{
+  if(!user) location.href="login.html";
 
-  // Load immediately and update in real-time
-  onValue(userRef, snapshot => {
-    if(!snapshot.exists()) return;
-    const data = snapshot.val();
-    nameInput.value = data.name || "";
-    emailInput.value = data.email || "";
-    phoneInput.value = data.phone || "";
-    countryInput.value = data.country || "";
+  userRef = ref(db,"users/"+user.uid);
+
+  onValue(userRef,snap=>{
+    if(!snap.exists()) return;
+    const d = snap.val();
+
+    if(!d.accountId){
+      const accId = generateAccountId(user.uid);
+      update(userRef,{ accountId: accId });
+      accountIdInput.value = accId;
+    }else{
+      accountIdInput.value = d.accountId;
+    }
+
+    nameInput.value = d.name || "";
+    emailInput.value = d.email || "";
+    phoneInput.value = d.phone || "";
+    countryInput.value = d.country || "";
   });
 });
 
-// Save button click
-saveBtn.onclick = () => {
-  const updates = {};
-  if(!nameInput.disabled) updates.name = nameInput.value.trim();
-  if(!phoneInput.disabled) updates.phone = phoneInput.value.trim();
+saveBtn.onclick=()=>{
+  const updates={};
+  if(!nameInput.disabled) updates.name=nameInput.value.trim();
+  if(!phoneInput.disabled) updates.phone=phoneInput.value.trim();
 
-  if(Object.keys(updates).length === 0){
-    showToast("No changes to save", false);
+  if(!Object.keys(updates).length){
+    showToast("No changes to save",false);
     return;
   }
 
-  update(userRef, updates)
-    .then(()=> {
-      showToast("Details updated successfully");
-      nameInput.disabled = true;
-      phoneInput.disabled = true;
+  update(userRef,updates)
+    .then(()=>{
+      showToast("Profile updated");
+      nameInput.disabled=true;
+      phoneInput.disabled=true;
     })
-    .catch(()=> showToast("Failed to update details", false));
-}
+    .catch(()=>showToast("Update failed",false));
+};
 
-// Logout
-logoutBtn.onclick = () => signOut(auth).then(()=> location.href="login.html");
-
+logoutBtn.onclick=()=>signOut(auth).then(()=>location.href="login.html");
 </script>
+
 </body>
-  </html>
+</html>
