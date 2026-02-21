@@ -22,9 +22,9 @@ body { font-family: 'Inter', sans-serif; background: #0f172a; }
   color: white;
   text-align:center;
 }
-.copy { cursor:pointer; background:#020617; padding:5px 10px; border-radius:6px; display:inline-block; word-break:break-all; }
 .progress-bar-container { background:#1e293b; border-radius:6px; width:100%; height:10px; margin-top:5px; }
 .progress-bar { background:#10b981; height:100%; border-radius:6px; width:0%; transition: width 0.5s ease; }
+.card { background:#1e293b; border-radius:12px; padding:1rem; margin-bottom:1rem; }
 </style>
 </head>
 <body class="text-white min-h-screen flex flex-col">
@@ -72,11 +72,6 @@ function showToast(msg, success=true){
   setTimeout(()=> toast.style.display="none", 3000);
 }
 
-function copyText(val){
-  navigator.clipboard.writeText(val);
-  showToast("Copied to clipboard");
-}
-
 function formatTime(ms){
   const total = Math.max(ms,0);
   const days = Math.floor(total / (1000*60*60*24));
@@ -90,98 +85,85 @@ onAuthStateChanged(auth, user => {
   if(!user){ window.location.href="login.html"; return; }
 
   const investmentsRef = ref(db, `investments/${user.uid}`);
-  const tradesRef = ref(db, `trades/${user.uid}`);
+  const payoutsRef = ref(db, `payouts/${user.uid}`);
 
-  // Active Investments
+  // Render active investments
   onValue(investmentsRef, snapshot => {
     const activeDiv = document.getElementById("activeInvestments");
     activeDiv.innerHTML = "";
     snapshot.forEach(child => {
       const inv = child.val();
-      if(inv.status === "active"){
-        const div = document.createElement("div");
-        div.className = "bg-slate-900 p-3 rounded flex flex-col justify-between";
-        const start = inv.startTime;
-        const durationMs = 7*24*60*60*1000;
-        div.innerHTML = `
-          <div class="flex justify-between items-center">
-            <div>
-              <div class="font-semibold">${inv.planName}</div>
-              <div class="text-gray-400">Amount: $${inv.amount} | ROI: ${inv.roi}% | Payout: $${inv.payout}</div>
-            </div>
-            <div class="copy" onclick="copyText('${inv.planName} - $${inv.amount}')">Copy</div>
-          </div>
-          <div class="progress-bar-container mt-2">
-            <div class="progress-bar" id="progress-${child.key}"></div>
-          </div>
-          <div class="text-gray-400 text-xs mt-1" id="time-${child.key}"></div>
-        `;
-        activeDiv.appendChild(div);
+      if(inv.status !== "active") return;
 
-        const progressEl = div.querySelector(".progress-bar");
-        const timeEl = div.querySelector(`#time-${child.key}`);
+      const div = document.createElement("div");
+      div.className = "card";
 
-        function updateProgress(){
-          const elapsed = Date.now() - start;
-          const percent = Math.min((elapsed/durationMs)*100,100);
-          progressEl.style.width = percent+"%";
-          timeEl.innerText = "Time remaining: "+formatTime((start+durationMs)-Date.now());
-          if(percent<100) requestAnimationFrame(updateProgress);
-        }
-        updateProgress();
+      const start = inv.startTime;
+      const durationMs = (inv.durationDays || 7)*24*60*60*1000;
+
+      div.innerHTML = `
+        <div class="font-semibold">${inv.planName}</div>
+        <div class="text-gray-400">Amount: $${inv.amount} | ROI: ${inv.roi}% | Payout: $${inv.payout}</div>
+        <div class="progress-bar-container mt-2">
+          <div class="progress-bar" id="progress-${child.key}"></div>
+        </div>
+        <div class="text-gray-400 text-xs mt-1" id="time-${child.key}"></div>
+      `;
+      activeDiv.appendChild(div);
+
+      const progressEl = div.querySelector(".progress-bar");
+      const timeEl = div.querySelector(`#time-${child.key}`);
+
+      function updateProgress(){
+        const elapsed = Date.now() - start;
+        const percent = Math.min((elapsed/durationMs)*100,100);
+        progressEl.style.width = percent+"%";
+        timeEl.innerText = "Time remaining: "+formatTime((start+durationMs)-Date.now());
+        if(percent<100) requestAnimationFrame(updateProgress);
       }
+      updateProgress();
     });
     if(!activeDiv.hasChildNodes()) activeDiv.innerHTML="<p class='text-gray-400'>No active investments</p>";
   });
 
-  // Ongoing Trades
-  onValue(tradesRef, snapshot => {
+  // Render ongoing robot trades
+  onValue(payoutsRef, snapshot => {
     const tradesDiv = document.getElementById("trades");
     tradesDiv.innerHTML = "";
     let tradesFound = false;
 
-    // traverse all child nodes (nested)
     snapshot.forEach(child => {
-      const tradeData = child.val();
-      Object.keys(tradeData).forEach(key => {
-        const trade = tradeData[key];
-        if(!trade || !trade.robotName) return;
-        tradesFound = true;
+      const trade = child.val();
+      if(trade.claimed) return;
+      tradesFound = true;
 
-        const div = document.createElement("div");
-        div.className = "bg-slate-900 p-3 rounded flex flex-col justify-between";
+      const div = document.createElement("div");
+      div.className = "card";
 
-        const start = trade.startTime || Date.now();
-        const durationMs = trade.durationMs || 7*24*60*60*1000;
+      const start = trade.timestamp || Date.now();
+      const durationMs = 3*24*60*60*1000; // 3 days per earn.html
 
-        div.innerHTML = `
-          <div class="flex justify-between items-center">
-            <div>
-              <div class="font-semibold">${trade.robotName}</div>
-              <div class="text-gray-400">Pair: ${trade.pair || '-'} | Invested: $${trade.amount || 0} | Current: $${trade.currentValue || 0} | Status: ${trade.status || '-'}</div>
-            </div>
-            <div class="copy" onclick="copyText('${trade.robotName} - $${trade.amount}')">Copy</div>
-          </div>
-          <div class="progress-bar-container mt-2">
-            <div class="progress-bar" id="trade-progress-${child.key}-${key}"></div>
-          </div>
-          <div class="text-gray-400 text-xs mt-1" id="trade-time-${child.key}-${key}"></div>
-        `;
+      div.innerHTML = `
+        <div class="font-semibold">Robot Trade: ${trade.pair}</div>
+        <div class="text-gray-400">Amount: $${trade.amount} | Status: ${trade.status || 'Trading...'}</div>
+        <div class="progress-bar-container mt-2">
+          <div class="progress-bar" id="trade-progress-${child.key}"></div>
+        </div>
+        <div class="text-gray-400 text-xs mt-1" id="trade-time-${child.key}"></div>
+      `;
+      tradesDiv.appendChild(div);
 
-        tradesDiv.appendChild(div);
+      const progressEl = div.querySelector(".progress-bar");
+      const timeEl = div.querySelector(`#trade-time-${child.key}`);
 
-        const progressEl = div.querySelector(".progress-bar");
-        const timeEl = div.querySelector(`#trade-time-${child.key}-${key}`);
-
-        function updateTradeProgress(){
-          const elapsed = Date.now() - start;
-          const percent = Math.min((elapsed/durationMs)*100,100);
-          progressEl.style.width = percent+"%";
-          timeEl.innerText = "Time elapsed: "+formatTime(elapsed)+" / "+formatTime(durationMs);
-          if(percent<100) requestAnimationFrame(updateTradeProgress);
-        }
-        updateTradeProgress();
-      });
+      function updateTradeProgress(){
+        const elapsed = Date.now() - start;
+        const percent = Math.min((elapsed/durationMs)*100,100);
+        progressEl.style.width = percent+"%";
+        timeEl.innerText = "Time elapsed: "+formatTime(elapsed)+" / "+formatTime(durationMs);
+        if(percent<100) requestAnimationFrame(updateTradeProgress);
+      }
+      updateTradeProgress();
     });
 
     if(!tradesFound) tradesDiv.innerHTML="<p class='text-gray-400'>No trades yet</p>";
