@@ -14,11 +14,16 @@ body{
   background:radial-gradient(circle at top,#1e293b,#020617);
 }
 .glow{
-  box-shadow:0 0 30px rgba(16,185,129,.45);
+  box-shadow:0 0 32px rgba(16,185,129,.35);
 }
-.card-glow:hover{
-  box-shadow:0 20px 40px rgba(16,185,129,.25);
-  transform:translateY(-4px);
+.card{
+  background:linear-gradient(180deg,#020617,#020617cc);
+  border:1px solid #1f2937;
+  border-radius:18px;
+}
+.card-hover:hover{
+  transform:translateY(-6px);
+  box-shadow:0 24px 48px rgba(16,185,129,.18);
 }
 </style>
 </head>
@@ -26,119 +31,131 @@ body{
 <body class="text-white">
 
 <!-- NAVBAR -->
-<nav class="flex justify-between items-center px-6 py-4 bg-slate-900/80 backdrop-blur border-b border-slate-800">
+<nav class="flex justify-between items-center px-8 py-4 bg-slate-900/80 backdrop-blur border-b border-slate-800">
   <h1 class="text-2xl font-extrabold text-emerald-400">Quantum Apex</h1>
-  <div class="flex items-center gap-4">
+  <div class="flex items-center gap-6">
     <a href="login.html" class="text-gray-300 hover:text-emerald-400 font-semibold">Login</a>
     <a href="register.html" class="bg-emerald-500 px-6 py-2 rounded-full hover:bg-emerald-600 font-semibold">
-      Get Started
+      Create Account
     </a>
   </div>
 </nav>
 
 <!-- HERO -->
-<section class="text-center py-24 px-6">
-  <span class="inline-block mb-4 px-4 py-1 rounded-full bg-emerald-500/10 text-emerald-400 font-semibold text-sm">
-    Guaranteed 40% Trading Cycles
+<section class="text-center py-28 px-6">
+  <span class="inline-block mb-5 px-4 py-1 rounded-full bg-emerald-500/10 text-emerald-400 font-semibold text-sm">
+    Algorithmic Yield Platform
   </span>
 
-  <h2 class="text-4xl md:text-6xl font-extrabold mb-6 leading-tight">
-    Smart Digital Investments<br>
-    <span class="text-emerald-400">Earn 40% Profit</span>
+  <h2 class="text-4xl md:text-6xl font-extrabold mb-8 leading-tight">
+    Structured Digital Investments<br>
+    <span class="text-emerald-400">Consistent 40% Returns</span>
   </h2>
 
-  <p class="text-gray-400 max-w-2xl mx-auto mb-10 text-lg">
-    Quantum Apex is a structured digital investment platform offering
-    fixed 40% returns through controlled algorithmic trading cycles.
+  <p class="text-gray-400 max-w-3xl mx-auto mb-12 text-lg leading-relaxed">
+    Quantum Apex is a professionally managed digital investment platform
+    utilizing controlled algorithmic trading strategies. Capital is deployed
+    in predefined cycles with transparent profit distribution and automated settlement.
   </p>
 
   <a href="register.html"
-     class="bg-emerald-500 px-10 py-4 rounded-full text-lg font-bold glow hover:bg-emerald-600">
-    Start Investing
+     class="bg-emerald-500 px-12 py-4 rounded-full text-lg font-bold glow hover:bg-emerald-600">
+    Start Investing Today
   </a>
 </section>
 
-<!-- STATS -->
-<section class="grid grid-cols-2 md:grid-cols-4 gap-8 text-center px-6 py-16 bg-slate-900/60">
+<!-- TRUST STATS -->
+<section class="grid grid-cols-2 md:grid-cols-4 gap-10 text-center px-6 py-20 bg-slate-900/60">
   <div>
     <h3 class="text-3xl font-extrabold text-emerald-400">$2.4M+</h3>
-    <p class="text-gray-400">Total Deposits</p>
+    <p class="text-gray-400 mt-1">Capital Deployed</p>
   </div>
   <div>
     <h3 class="text-3xl font-extrabold text-emerald-400">12,450+</h3>
-    <p class="text-gray-400">Active Investors</p>
+    <p class="text-gray-400 mt-1">Verified Investors</p>
   </div>
   <div>
     <h3 class="text-3xl font-extrabold text-emerald-400">98.7%</h3>
-    <p class="text-gray-400">Successful Payouts</p>
+    <p class="text-gray-400 mt-1">Successful Cycles</p>
   </div>
   <div>
     <h3 class="text-3xl font-extrabold text-emerald-400">24/7</h3>
-    <p class="text-gray-400">Automated Trading</p>
+    <p class="text-gray-400 mt-1">Automated Execution</p>
   </div>
 </section>
 
-<!-- HOW IT WORKS -->
-<section class="py-24 px-6 text-center">
-  <h2 class="text-3xl font-extrabold mb-14">How It Works</h2>
+<!-- PLATFORM OVERVIEW -->
+<section class="py-24 px-6">
+  <h2 class="text-3xl font-extrabold text-center mb-16">Platform Overview</h2>
 
-  <div class="grid md:grid-cols-3 gap-8 max-w-6xl mx-auto">
-    <div class="bg-slate-800 p-8 rounded-2xl">
-      <h3 class="text-xl font-bold mb-3">1. Deposit Funds</h3>
-      <p class="text-gray-400">Fund your account securely and choose a plan.</p>
+  <div class="grid md:grid-cols-3 gap-10 max-w-7xl mx-auto">
+    <div class="card p-8 card-hover transition-all">
+      <h3 class="text-xl font-bold mb-3">Capital Protection</h3>
+      <p class="text-gray-400 leading-relaxed">
+        Funds are allocated into diversified trading pools with predefined
+        exposure limits and automated risk controls.
+      </p>
     </div>
-    <div class="bg-slate-800 p-8 rounded-2xl">
-      <h3 class="text-xl font-bold mb-3">2. Trading Cycle</h3>
-      <p class="text-gray-400">Funds enter automated algorithmic trading pools.</p>
+    <div class="card p-8 card-hover transition-all">
+      <h3 class="text-xl font-bold mb-3">Algorithmic Trading</h3>
+      <p class="text-gray-400 leading-relaxed">
+        Proprietary trading algorithms operate continuously,
+        identifying short-term market inefficiencies.
+      </p>
     </div>
-    <div class="bg-slate-800 p-8 rounded-2xl">
-      <h3 class="text-xl font-bold mb-3">3. Earn 40% Profit</h3>
-      <p class="text-gray-400">Profit credited automatically at maturity.</p>
+    <div class="card p-8 card-hover transition-all">
+      <h3 class="text-xl font-bold mb-3">Transparent Payouts</h3>
+      <p class="text-gray-400 leading-relaxed">
+        All profits are credited automatically at cycle completion
+        with full transaction visibility.
+      </p>
     </div>
   </div>
 </section>
 
 <!-- INVESTMENT PLANS -->
-<section class="bg-slate-900 py-24 px-6 text-center">
-  <h2 class="text-3xl font-extrabold mb-14">Investment Plans</h2>
+<section class="bg-slate-900 py-24 px-6">
+  <h2 class="text-3xl font-extrabold text-center mb-16">Investment Plans</h2>
 
-  <div class="grid sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-8 max-w-7xl mx-auto">
-
-    <!-- PLAN TEMPLATE -->
-    <!-- 40% ROI -->
-    <!-- Repeatable cards -->
+  <div class="grid sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-10 max-w-7xl mx-auto">
     <script>
-      const plans = [20,30,50,100,200,400,600,800,1000,5000,10000];
+      const plans=[20,30,50,100,200,400,600,800,1000,5000,10000];
       document.write(plans.map(p=>`
-        <div class="bg-slate-800 p-6 rounded-2xl border border-emerald-500/30 flex flex-col justify-between card-glow transition-all">
+        <div class="card p-6 flex flex-col justify-between card-hover transition-all">
           <div>
-            <h3 class="text-xl font-bold mb-2">Plan $${p}</h3>
-            <p class="text-3xl font-extrabold text-emerald-400 mb-2">40% ROI</p>
-            <p class="text-gray-400 mb-1">Duration: 7 Days</p>
-            <p class="text-gray-400 mb-6">Minimum: $${p}</p>
+            <h3 class="text-lg font-bold mb-2">Capital Allocation</h3>
+            <p class="text-3xl font-extrabold text-emerald-400 mb-4">$${p}</p>
+
+            <div class="space-y-2 text-sm text-gray-400">
+              <p><span class="text-gray-300">Cycle Duration:</span> 7 Days</p>
+              <p><span class="text-gray-300">Expected Return:</span> 40%</p>
+              <p><span class="text-gray-300">Payout:</span> Automatic</p>
+            </div>
+
+            <div class="mt-4 pt-4 border-t border-slate-800 text-sm text-gray-400">
+              Estimated Profit:
+              <span class="text-emerald-400 font-bold">$${(p*0.4).toFixed(2)}</span>
+            </div>
           </div>
+
           <a href="register.html"
-             class="bg-emerald-500 py-2 rounded-full font-bold hover:bg-emerald-600">
+             class="mt-6 bg-emerald-500 py-2 rounded-full text-center font-bold hover:bg-emerald-600">
             Invest Now
           </a>
         </div>
       `).join(""));
     </script>
-
   </div>
 </section>
 
-<!-- REFERRAL -->
+<!-- SECURITY -->
 <section class="py-24 px-6 text-center">
-  <h2 class="text-3xl font-extrabold mb-8">Earn Through Referrals</h2>
-  <p class="text-gray-400 max-w-2xl mx-auto mb-10">
-    Invite investors and earn instant referral commissions credited
-    directly to your wallet.
+  <h2 class="text-3xl font-extrabold mb-10">Security & Compliance</h2>
+  <p class="text-gray-400 max-w-3xl mx-auto leading-relaxed">
+    Quantum Apex employs industry-standard security practices including
+    encrypted authentication, real-time monitoring, and controlled withdrawal
+    mechanisms to ensure platform integrity and investor protection.
   </p>
-  <a href="register.html"
-     class="bg-emerald-500 px-10 py-4 rounded-full glow hover:bg-emerald-600 font-bold">
-    Join & Earn
-  </a>
 </section>
 
 <!-- FOOTER -->
