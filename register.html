@@ -4,52 +4,19 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Create Account – Quantum Apex</title>
-
 <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-database.js"></script>
 <script src="https://cdn.tailwindcss.com"></script>
-
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800&display=swap" rel="stylesheet">
-
 <style>
-body{
-  font-family:Inter,system-ui,sans-serif;
-  background:radial-gradient(circle at top,#1e293b,#020617);
-}
-.card{
-  background:linear-gradient(180deg,#020617,#020617cc);
-  border:1px solid #1f2937;
-  border-radius:18px;
-  box-shadow:0 20px 40px rgba(0,0,0,.65), inset 0 1px 0 rgba(255,255,255,.03);
-}
-input,select{
-  background:#020617;
-  border:1px solid #334155;
-  color:#f9fafb;
-}
-input:focus,select:focus{
-  outline:none;
-  border-color:#10b981;
-  box-shadow:0 0 0 2px rgba(16,185,129,.15);
-}
-.toast{
-  position:fixed;
-  top:50%;
-  left:50%;
-  transform:translate(-50%,-50%);
-  background:#020617;
-  padding:12px 26px;
-  border-radius:14px;
-  box-shadow:0 18px 36px rgba(0,0,0,.7);
-  display:none;
-  font-weight:700;
-  z-index:1000;
-  text-align:center;
-}
+body{ font-family:Inter,system-ui,sans-serif; background:radial-gradient(circle at top,#1e293b,#020617); }
+.card{ background:linear-gradient(180deg,#020617,#020617cc); border:1px solid #1f2937; border-radius:18px; box-shadow:0 20px 40px rgba(0,0,0,.65), inset 0 1px 0 rgba(255,255,255,.03); }
+input,select{ background:#020617; border:1px solid #334155; color:#f9fafb; }
+input:focus,select:focus{ outline:none; border-color:#10b981; box-shadow:0 0 0 2px rgba(16,185,129,.15); }
+.toast{ position:fixed; top:50%; left:50%; transform:translate(-50%,-50%); background:#020617; padding:12px 26px; border-radius:14px; box-shadow:0 18px 36px rgba(0,0,0,.7); display:none; font-weight:700; z-index:1000; text-align:center; }
 </style>
 </head>
-
 <body class="min-h-screen flex items-center justify-center text-white px-3">
 
 <div class="card w-full max-w-sm p-5">
@@ -57,7 +24,6 @@ input:focus,select:focus{
     <h1 class="text-xl font-extrabold text-emerald-400">Create Account</h1>
     <p class="text-gray-400 text-xs mt-0.5">Join Quantum Apex and earn up to 40% profit</p>
   </div>
-
   <div class="space-y-2.5">
     <div>
       <label class="block text-[10px] uppercase text-gray-400 mb-0.5">Full Name</label>
@@ -95,14 +61,12 @@ input:focus,select:focus{
       <input id="referral" class="w-full h-9 px-3 rounded-md" placeholder="QA-XXXX">
     </div>
   </div>
-
   <button id="registerBtn" class="mt-4 w-full h-10 rounded-lg font-extrabold text-sm
            bg-gradient-to-r from-emerald-500 to-emerald-600
            hover:from-emerald-600 hover:to-emerald-700
            shadow shadow-emerald-500/25 transition">
     Create Account
   </button>
-
   <p class="text-center mt-3 text-xs text-gray-400">
     Already have an account?
     <a href="login.html" class="text-emerald-400 font-semibold hover:underline">Login</a>
@@ -114,7 +78,7 @@ input:focus,select:focus{
 <script type="module">
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
 import { getAuth, createUserWithEmailAndPassword } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js";
-import { getDatabase, ref, set, get, child } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-database.js";
+import { getDatabase, ref, set, get } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-database.js";
 
 const app = initializeApp({
   apiKey:"AIzaSyDaEphuY2kQue8m-20DDs68JDgQirAycBE",
@@ -125,13 +89,13 @@ const app = initializeApp({
 
 const auth = getAuth(app);
 const db = getDatabase(app);
+const toast = document.getElementById("toast");
 
 function showToast(msg, ok=true){
-  const t=document.getElementById("toast");
-  t.innerText=msg;
-  t.style.display="block";
-  t.style.color=ok?"#10b981":"#ef4444";
-  setTimeout(()=>t.style.display="none",3000);
+  toast.innerText = msg;
+  toast.style.display = "block";
+  toast.style.color = ok?"#10b981":"#ef4444";
+  setTimeout(()=>toast.style.display="none",3000);
 }
 
 function genCode(){
@@ -148,23 +112,31 @@ registerBtn.onclick = async () => {
   const refCode = referral.value.trim().toUpperCase();
 
   if(!name||!email||!phone||!country||!pass||!pass2){
-    showToast("Please complete all required fields",false); return;
+    showToast("Please complete all required fields",false);
+    return;
   }
   if(pass!==pass2){
-    showToast("Passwords do not match",false); return;
+    showToast("Passwords do not match",false);
+    return;
   }
 
   try{
     const cred = await createUserWithEmailAndPassword(auth,email,pass);
     const uid = cred.user.uid;
 
-    // Referral lookup safely
+    // Safe referral lookup
     let referredBy = null;
     if(refCode){
-      const snap = await get(child(ref(db,"users")));
-      snap.forEach(u=>{
-        if(u.val().referralCode===refCode) referredBy=u.key;
-      });
+      const usersSnap = await get(ref(db,"users"));
+      if(usersSnap.exists()){
+        const users = usersSnap.val();
+        for(const key in users){
+          if(users[key].referralCode === refCode){
+            referredBy = key;
+            break;
+          }
+        }
+      }
     }
 
     await set(ref(db,"users/"+uid),{
@@ -187,8 +159,6 @@ registerBtn.onclick = async () => {
       showToast("Invalid email address", false);
     } else if(e.code === "auth/weak-password"){
       showToast("Password is too weak", false);
-    } else if(e.code==="PERMISSION_DENIED"){
-      showToast("Permission denied. Contact admin.", false);
     } else {
       showToast(e.message,false);
     }
@@ -196,6 +166,5 @@ registerBtn.onclick = async () => {
   }
 };
 </script>
-
 </body>
-  </html>
+                                                                </html>
