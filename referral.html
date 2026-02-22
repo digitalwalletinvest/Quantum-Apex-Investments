@@ -26,23 +26,18 @@
     .info { margin-top:1.5rem; background:#020617; border-radius:14px; padding:1.2rem; font-size:14px; color:#cbd5e1; }
     .info li { margin-bottom:0.6rem; }
     .back-btn { position:fixed; top:1rem; right:1rem; background:#ef4444; color:white; border:none; padding:0.6rem 1.2rem; border-radius:10px; font-weight:bold; cursor:pointer; }
-    
-    /* Toast notification */
-    .toast {
-      position: fixed;
-      top: 50%;
-      left: 50%;
-      transform: translate(-50%, -50%);
-      background: #1e293b;
-      color: #facc15;
-      padding: 1rem 2rem;
-      border-radius: 12px;
-      font-weight: bold;
-      box-shadow: 0 4px 15px rgba(0,0,0,0.4);
-      display: none;
-      z-index: 1000;
-      text-align: center;
-    }
+
+    .toast { position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%); background: #1e293b; color: #facc15; padding: 1rem 2rem; border-radius: 12px; font-weight: bold; box-shadow: 0 4px 15px rgba(0,0,0,0.4); display: none; z-index: 1000; text-align: center; }
+
+    /* Referred users list */
+    .referred-list { margin-top:1.5rem; background:#1e293b; border-radius:12px; padding:1rem; }
+    .referred-list h3 { font-size:18px; margin-bottom:0.8rem; }
+    .referred-user { display:flex; justify-content:space-between; padding:0.6rem 0; border-bottom:1px solid #334155; }
+    .referred-user:last-child { border-bottom:none; }
+    .user-email { color:#38bdf8; }
+    .user-status { font-weight:bold; }
+    .status-deposit { color:#22c55e; }
+    .status-pending { color:#facc15; }
   </style>
 </head>
 
@@ -75,6 +70,13 @@
       <div class="balance-amount">$<span id="balance">0</span></div>
     </div>
 
+    <div class="referred-list" id="referredList">
+      <h3>Referred Users</h3>
+      <div id="usersContainer">
+        <!-- Referred users will appear here -->
+      </div>
+    </div>
+
     <div class="info">
       <ul>
         <li>✔ Bonus is credited <strong>only after your referral makes their first deposit</strong></li>
@@ -92,7 +94,7 @@
 <script type="module">
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
 import { getAuth, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js";
-import { getDatabase, ref, onValue, update } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-database.js";
+import { getDatabase, ref, onValue, update, query, orderByChild, equalTo } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-database.js";
 
 const app = initializeApp({
   apiKey: "AIzaSyDaEphuY2kQue8m-20DDs68JDgQirAycBE",
@@ -103,7 +105,6 @@ const app = initializeApp({
 
 const auth = getAuth(app);
 const db = getDatabase(app);
-
 const toast = document.getElementById("toast");
 
 function showNotification(msg){
@@ -112,38 +113,85 @@ function showNotification(msg){
   setTimeout(()=>{ toast.style.display = "none"; }, 2000);
 }
 
-// Generate short referral code
-function generateReferralCode(length = 6){
+// Generate unique referral code
+async function generateUniqueCode(length = 6){
   const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789';
   let code = '';
-  for(let i=0;i<length;i++){
-    code += chars.charAt(Math.floor(Math.random() * chars.length));
+  let exists = true;
+
+  while(exists){
+    code = '';
+    for(let i=0;i<length;i++){
+      code += chars.charAt(Math.floor(Math.random() * chars.length));
+    }
+
+    const usersSnap = await get(ref(db,"users"));
+    exists = false;
+    if(usersSnap.exists()){
+      const users = usersSnap.val();
+      for(const key in users){
+        if(users[key].referralCode === code){
+          exists = true;
+          break;
+        }
+      }
+    }
   }
   return code;
 }
 
 onAuthStateChanged(auth, async user => {
   if(!user) return;
-
   const userRef = ref(db, "users/" + user.uid);
 
-  // Check if user already has a code
+  // Listen to own user data
   onValue(userRef, async snap => {
     const data = snap.val() || {};
     let code = data.referralCode;
 
     // Generate new code if not present
     if(!code){
-      code = generateReferralCode();
+      code = await generateUniqueCode();
       await update(userRef, { referralCode: code });
     }
 
     document.getElementById("code").innerText = code;
-    document.getElementById("balance").innerText = data.referralBalance || 0;
+
+    // Listen only to referred users' deposits
+    const refQuery = query(ref(db,"users"), orderByChild("referredBy"), equalTo(user.uid));
+    onValue(refQuery, async snap2 => {
+      let totalReferral = 0;
+      const usersContainer = document.getElementById("usersContainer");
+      usersContainer.innerHTML = ""; // clear before adding
+      snap2.forEach(uSnap => {
+        const u = uSnap.val();
+        const email = u.email || "Unknown";
+        const deposited = u.totalDeposited > 0;
+
+        // Build user item
+        const div = document.createElement("div");
+        div.classList.add("referred-user");
+        div.innerHTML = `
+          <span class="user-email">${email}</span>
+          <span class="user-status ${deposited ? 'status-deposit':'status-pending'}">
+            ${deposited ? 'Deposited' : 'Pending'}
+          </span>
+        `;
+        usersContainer.appendChild(div);
+
+        if(deposited) totalReferral += 6;
+      });
+
+      // Update display and DB if changed
+      document.getElementById("balance").innerText = totalReferral;
+      if(data.referralBalance !== totalReferral){
+        await update(userRef, { referralBalance: totalReferral });
+      }
+    });
   });
 });
 
-// Copy referral code with notification
+// Copy referral code
 document.getElementById("copyBtn").addEventListener("click", ()=>{
   const codeText = document.getElementById("code").innerText;
   navigator.clipboard.writeText(codeText).then(()=> showNotification("Referral code copied!"));
@@ -151,4 +199,4 @@ document.getElementById("copyBtn").addEventListener("click", ()=>{
 </script>
 
 </body>
-</html>
+      </html>
