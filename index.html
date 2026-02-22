@@ -4,188 +4,146 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Quantum Apex Yield</title>
+
 <script src="https://cdn.tailwindcss.com"></script>
-<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800&display=swap" rel="stylesheet">
+
 <style>
-body { font-family: 'Inter', sans-serif; background: #0f172a; }
-.glow { box-shadow: 0 0 25px rgba(16,185,129,0.4); }
+body{
+  font-family:'Inter',sans-serif;
+  background:radial-gradient(circle at top,#1e293b,#020617);
+}
+.glow{
+  box-shadow:0 0 30px rgba(16,185,129,.45);
+}
+.card-glow:hover{
+  box-shadow:0 20px 40px rgba(16,185,129,.25);
+  transform:translateY(-4px);
+}
 </style>
 </head>
 
 <body class="text-white">
 
 <!-- NAVBAR -->
-<nav class="flex justify-between items-center px-6 py-4 bg-slate-900 shadow-lg">
-<h1 class="text-2xl font-bold text-emerald-400">Quantum Apex</h1>
-<div class="flex items-center gap-4">
-<a href="login.html" class="hover:text-emerald-400 font-semibold">Login</a>
-<a href="register.html" class="bg-emerald-500 px-5 py-2 rounded-full hover:bg-emerald-600 font-semibold">Get Started</a>
-</div>
+<nav class="flex justify-between items-center px-6 py-4 bg-slate-900/80 backdrop-blur border-b border-slate-800">
+  <h1 class="text-2xl font-extrabold text-emerald-400">Quantum Apex</h1>
+  <div class="flex items-center gap-4">
+    <a href="login.html" class="text-gray-300 hover:text-emerald-400 font-semibold">Login</a>
+    <a href="register.html" class="bg-emerald-500 px-6 py-2 rounded-full hover:bg-emerald-600 font-semibold">
+      Get Started
+    </a>
+  </div>
 </nav>
 
 <!-- HERO -->
-<section class="text-center py-20 px-6">
-<h2 class="text-4xl md:text-5xl font-bold mb-6">
-Controlled High-Yield Digital Investment Platform
-</h2>
-<p class="text-gray-400 max-w-2xl mx-auto mb-8">
-Earn competitive returns through structured algorithmic trading cycles with controlled risk management.
-</p>
-<a href="register.html" class="bg-emerald-500 px-8 py-3 rounded-full text-lg glow hover:bg-emerald-600 font-semibold">
-Start Investing
-</a>
+<section class="text-center py-24 px-6">
+  <span class="inline-block mb-4 px-4 py-1 rounded-full bg-emerald-500/10 text-emerald-400 font-semibold text-sm">
+    Guaranteed 40% Trading Cycles
+  </span>
+
+  <h2 class="text-4xl md:text-6xl font-extrabold mb-6 leading-tight">
+    Smart Digital Investments<br>
+    <span class="text-emerald-400">Earn 40% Profit</span>
+  </h2>
+
+  <p class="text-gray-400 max-w-2xl mx-auto mb-10 text-lg">
+    Quantum Apex is a structured digital investment platform offering
+    fixed 40% returns through controlled algorithmic trading cycles.
+  </p>
+
+  <a href="register.html"
+     class="bg-emerald-500 px-10 py-4 rounded-full text-lg font-bold glow hover:bg-emerald-600">
+    Start Investing
+  </a>
 </section>
 
 <!-- STATS -->
-<section class="grid grid-cols-2 md:grid-cols-4 gap-6 text-center px-6 py-16 bg-slate-800">
-<div>
-<h3 class="text-3xl font-bold text-emerald-400">$2.4M+</h3>
-<p class="text-gray-400">Total Deposits</p>
-</div>
-<div>
-<h3 class="text-3xl font-bold text-emerald-400">12,450+</h3>
-<p class="text-gray-400">Active Investors</p>
-</div>
-<div>
-<h3 class="text-3xl font-bold text-emerald-400">98.7%</h3>
-<p class="text-gray-400">Successful Payouts</p>
-</div>
-<div>
-<h3 class="text-3xl font-bold text-emerald-400">24/7</h3>
-<p class="text-gray-400">Automated Trading</p>
-</div>
+<section class="grid grid-cols-2 md:grid-cols-4 gap-8 text-center px-6 py-16 bg-slate-900/60">
+  <div>
+    <h3 class="text-3xl font-extrabold text-emerald-400">$2.4M+</h3>
+    <p class="text-gray-400">Total Deposits</p>
+  </div>
+  <div>
+    <h3 class="text-3xl font-extrabold text-emerald-400">12,450+</h3>
+    <p class="text-gray-400">Active Investors</p>
+  </div>
+  <div>
+    <h3 class="text-3xl font-extrabold text-emerald-400">98.7%</h3>
+    <p class="text-gray-400">Successful Payouts</p>
+  </div>
+  <div>
+    <h3 class="text-3xl font-extrabold text-emerald-400">24/7</h3>
+    <p class="text-gray-400">Automated Trading</p>
+  </div>
 </section>
 
 <!-- HOW IT WORKS -->
-<section class="py-20 px-6 text-center">
-<h2 class="text-3xl font-bold mb-12">How It Works</h2>
-<div class="grid md:grid-cols-3 gap-8">
-<div class="bg-slate-800 p-8 rounded-2xl">
-<h3 class="text-xl font-semibold mb-4">1. Deposit Funds</h3>
-<p class="text-gray-400">Securely fund your wallet and choose an investment cycle.</p>
-</div>
-<div class="bg-slate-800 p-8 rounded-2xl">
-<h3 class="text-xl font-semibold mb-4">2. AI Trading Cycle</h3>
-<p class="text-gray-400">Your funds enter structured algorithmic trading pools.</p>
-</div>
-<div class="bg-slate-800 p-8 rounded-2xl">
-<h3 class="text-xl font-semibold mb-4">3. Earn & Withdraw</h3>
-<p class="text-gray-400">Receive profits at maturity and withdraw anytime.</p>
-</div>
-</div>
+<section class="py-24 px-6 text-center">
+  <h2 class="text-3xl font-extrabold mb-14">How It Works</h2>
+
+  <div class="grid md:grid-cols-3 gap-8 max-w-6xl mx-auto">
+    <div class="bg-slate-800 p-8 rounded-2xl">
+      <h3 class="text-xl font-bold mb-3">1. Deposit Funds</h3>
+      <p class="text-gray-400">Fund your account securely and choose a plan.</p>
+    </div>
+    <div class="bg-slate-800 p-8 rounded-2xl">
+      <h3 class="text-xl font-bold mb-3">2. Trading Cycle</h3>
+      <p class="text-gray-400">Funds enter automated algorithmic trading pools.</p>
+    </div>
+    <div class="bg-slate-800 p-8 rounded-2xl">
+      <h3 class="text-xl font-bold mb-3">3. Earn 40% Profit</h3>
+      <p class="text-gray-400">Profit credited automatically at maturity.</p>
+    </div>
+  </div>
 </section>
 
 <!-- INVESTMENT PLANS -->
-<section class="bg-slate-800 py-20 px-6 text-center">
-<h2 class="text-3xl font-bold mb-12">Investment Plans</h2>
-<div class="grid sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
+<section class="bg-slate-900 py-24 px-6 text-center">
+  <h2 class="text-3xl font-extrabold mb-14">Investment Plans</h2>
 
-<!-- Plan Cards -->
-<div class="bg-slate-900 p-6 rounded-2xl border border-emerald-500 flex flex-col justify-between">
-<h3 class="text-xl font-semibold mb-2">Plan $20</h3>
-<p class="text-2xl font-bold mb-2">15% ROI</p>
-<p class="text-gray-400 mb-2">7 Days</p>
-<p class="text-gray-400 mb-4">Minimum $20</p>
-<a href="register.html" class="bg-emerald-500 px-4 py-2 rounded-full hover:bg-emerald-600">Invest</a>
-</div>
+  <div class="grid sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-8 max-w-7xl mx-auto">
 
-<div class="bg-slate-900 p-6 rounded-2xl border border-emerald-500 flex flex-col justify-between">
-<h3 class="text-xl font-semibold mb-2">Plan $30</h3>
-<p class="text-2xl font-bold mb-2">15% ROI</p>
-<p class="text-gray-400 mb-2">7 Days</p>
-<p class="text-gray-400 mb-4">Minimum $30</p>
-<a href="register.html" class="bg-emerald-500 px-4 py-2 rounded-full hover:bg-emerald-600">Invest</a>
-</div>
+    <!-- PLAN TEMPLATE -->
+    <!-- 40% ROI -->
+    <!-- Repeatable cards -->
+    <script>
+      const plans = [20,30,50,100,200,400,600,800,1000,5000,10000];
+      document.write(plans.map(p=>`
+        <div class="bg-slate-800 p-6 rounded-2xl border border-emerald-500/30 flex flex-col justify-between card-glow transition-all">
+          <div>
+            <h3 class="text-xl font-bold mb-2">Plan $${p}</h3>
+            <p class="text-3xl font-extrabold text-emerald-400 mb-2">40% ROI</p>
+            <p class="text-gray-400 mb-1">Duration: 7 Days</p>
+            <p class="text-gray-400 mb-6">Minimum: $${p}</p>
+          </div>
+          <a href="register.html"
+             class="bg-emerald-500 py-2 rounded-full font-bold hover:bg-emerald-600">
+            Invest Now
+          </a>
+        </div>
+      `).join(""));
+    </script>
 
-<div class="bg-slate-900 p-6 rounded-2xl border border-emerald-500 flex flex-col justify-between">
-<h3 class="text-xl font-semibold mb-2">Plan $50</h3>
-<p class="text-2xl font-bold mb-2">15% ROI</p>
-<p class="text-gray-400 mb-2">7 Days</p>
-<p class="text-gray-400 mb-4">Minimum $50</p>
-<a href="register.html" class="bg-emerald-500 px-4 py-2 rounded-full hover:bg-emerald-600">Invest</a>
-</div>
-
-<div class="bg-slate-900 p-6 rounded-2xl border border-emerald-500 flex flex-col justify-between">
-<h3 class="text-xl font-semibold mb-2">Plan $100</h3>
-<p class="text-2xl font-bold mb-2">15% ROI</p>
-<p class="text-gray-400 mb-2">7 Days</p>
-<p class="text-gray-400 mb-4">Minimum $100</p>
-<a href="register.html" class="bg-emerald-500 px-4 py-2 rounded-full hover:bg-emerald-600">Invest</a>
-</div>
-
-<div class="bg-slate-900 p-6 rounded-2xl border border-emerald-500 flex flex-col justify-between">
-<h3 class="text-xl font-semibold mb-2">Plan $200</h3>
-<p class="text-2xl font-bold mb-2">15% ROI</p>
-<p class="text-gray-400 mb-2">7 Days</p>
-<p class="text-gray-400 mb-4">Minimum $200</p>
-<a href="register.html" class="bg-emerald-500 px-4 py-2 rounded-full hover:bg-emerald-600">Invest</a>
-</div>
-
-<div class="bg-slate-900 p-6 rounded-2xl border border-emerald-500 flex flex-col justify-between">
-<h3 class="text-xl font-semibold mb-2">Plan $400</h3>
-<p class="text-2xl font-bold mb-2">15% ROI</p>
-<p class="text-gray-400 mb-2">7 Days</p>
-<p class="text-gray-400 mb-4">Minimum $400</p>
-<a href="register.html" class="bg-emerald-500 px-4 py-2 rounded-full hover:bg-emerald-600">Invest</a>
-</div>
-
-<div class="bg-slate-900 p-6 rounded-2xl border border-emerald-500 flex flex-col justify-between">
-<h3 class="text-xl font-semibold mb-2">Plan $600</h3>
-<p class="text-2xl font-bold mb-2">15% ROI</p>
-<p class="text-gray-400 mb-2">7 Days</p>
-<p class="text-gray-400 mb-4">Minimum $600</p>
-<a href="register.html" class="bg-emerald-500 px-4 py-2 rounded-full hover:bg-emerald-600">Invest</a>
-</div>
-
-<div class="bg-slate-900 p-6 rounded-2xl border border-emerald-500 flex flex-col justify-between">
-<h3 class="text-xl font-semibold mb-2">Plan $800</h3>
-<p class="text-2xl font-bold mb-2">15% ROI</p>
-<p class="text-gray-400 mb-2">7 Days</p>
-<p class="text-gray-400 mb-4">Minimum $800</p>
-<a href="register.html" class="bg-emerald-500 px-4 py-2 rounded-full hover:bg-emerald-600">Invest</a>
-</div>
-
-<div class="bg-slate-900 p-6 rounded-2xl border border-emerald-500 flex flex-col justify-between">
-<h3 class="text-xl font-semibold mb-2">Plan $1000</h3>
-<p class="text-2xl font-bold mb-2">15% ROI</p>
-<p class="text-gray-400 mb-2">7 Days</p>
-<p class="text-gray-400 mb-4">Minimum $1000</p>
-<a href="register.html" class="bg-emerald-500 px-4 py-2 rounded-full hover:bg-emerald-600">Invest</a>
-</div>
-
-<div class="bg-slate-900 p-6 rounded-2xl border border-emerald-500 flex flex-col justify-between">
-<h3 class="text-xl font-semibold mb-2">Plan $5000</h3>
-<p class="text-2xl font-bold mb-2">15% ROI</p>
-<p class="text-gray-400 mb-2">7 Days</p>
-<p class="text-gray-400 mb-4">Minimum $5000</p>
-<a href="register.html" class="bg-emerald-500 px-4 py-2 rounded-full hover:bg-emerald-600">Invest</a>
-</div>
-
-<div class="bg-slate-900 p-6 rounded-2xl border border-emerald-500 flex flex-col justify-between">
-<h3 class="text-xl font-semibold mb-2">Plan $10000</h3>
-<p class="text-2xl font-bold mb-2">15% ROI</p>
-<p class="text-gray-400 mb-2">7 Days</p>
-<p class="text-gray-400 mb-4">Minimum $10000</p>
-<a href="register.html" class="bg-emerald-500 px-4 py-2 rounded-full hover:bg-emerald-600">Invest</a>
-</div>
-
-</div>
+  </div>
 </section>
 
 <!-- REFERRAL -->
-<section class="py-20 px-6 text-center">
-<h2 class="text-3xl font-bold mb-8">Earn Through Referrals</h2>
-<p class="text-gray-400 max-w-2xl mx-auto mb-6">
-Invite investors and earn multi-level bonuses instantly credited to your account.
-</p>
-<a href="register.html" class="bg-emerald-500 px-8 py-3 rounded-full glow hover:bg-emerald-600">
-Join & Earn
-</a>
+<section class="py-24 px-6 text-center">
+  <h2 class="text-3xl font-extrabold mb-8">Earn Through Referrals</h2>
+  <p class="text-gray-400 max-w-2xl mx-auto mb-10">
+    Invite investors and earn instant referral commissions credited
+    directly to your wallet.
+  </p>
+  <a href="register.html"
+     class="bg-emerald-500 px-10 py-4 rounded-full glow hover:bg-emerald-600 font-bold">
+    Join & Earn
+  </a>
 </section>
 
 <!-- FOOTER -->
-<footer class="bg-slate-900 text-center py-8 text-gray-500">
-<p>© 2026 Quantum Apex Yield. All Rights Reserved.</p>
+<footer class="bg-slate-900 text-center py-10 text-gray-500 border-t border-slate-800">
+  <p>© 2026 Quantum Apex Yield. All Rights Reserved.</p>
 </footer>
 
 </body>
