@@ -173,11 +173,11 @@ registerBtn.onclick = async () => {
   const refCode = referral.value.trim().toUpperCase();
 
   if(!name||!email||!phone||!country||!pass||!pass2){
-    showToast("Please complete all required fields",false); 
+    showToast("Please complete all required fields",false);   
     return;
   }
   if(pass!==pass2){
-    showToast("Passwords do not match",false); 
+    showToast("Passwords do not match",false);   
     return;
   }
 
@@ -185,7 +185,6 @@ registerBtn.onclick = async () => {
     const cred = await createUserWithEmailAndPassword(auth,email,pass);
     const uid = cred.user.uid;
 
-    // Make sure auth state is fully updated
     await auth.currentUser.reload();
 
     let referredBy = null;
@@ -196,7 +195,6 @@ registerBtn.onclick = async () => {
       });
     }
 
-    // Write to the user node exactly matching auth uid
     await set(ref(db,"users/"+uid),{
       uid,name,email,phone,country,
       mainBalance:0,lockedBalance:0,referralBalance:0,
@@ -210,17 +208,20 @@ registerBtn.onclick = async () => {
     showToast("Account created successfully");
     setTimeout(()=>location.href="dashboard.html",1200);
 
-catch(e){
-  // Map Firebase errors to user-friendly messages
-  let msg = "An error occurred";
-  if(e.code === "auth/email-already-in-use") msg = "Email already in use";
-  else if(e.code === "auth/invalid-email") msg = "Invalid email address";
-  else if(e.code === "auth/weak-password") msg = "Password is too weak";
-  else if(e.code === "auth/network-request-failed") msg = "Network error, try again";
-
-  showToast(msg,false);
-  console.error(e);
-}
+  }catch(e){
+    // Friendly error messages
+    if(e.code === "auth/email-already-in-use"){
+      showToast("Email already in use", false);
+    } else if(e.code === "auth/invalid-email"){
+      showToast("Invalid email address", false);
+    } else if(e.code === "auth/weak-password"){
+      showToast("Password is too weak", false);
+    } else {
+      showToast(e.message,false);
+    }
+    console.error(e);
+  }
+};
 </script>
 
 </body>
