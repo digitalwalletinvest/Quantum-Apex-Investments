@@ -139,7 +139,7 @@ input:focus,select:focus{
 <script type="module">
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
 import { getAuth, createUserWithEmailAndPassword } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js";
-import { getDatabase, ref, set, get } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-database.js";
+import { getDatabase, ref, set, get, child } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-database.js";
 
 const app = initializeApp({
   apiKey:"AIzaSyDaEphuY2kQue8m-20DDs68JDgQirAycBE",
@@ -182,11 +182,11 @@ registerBtn.onclick = async () => {
   }
 
   try{
+    // Create user in Firebase Auth
     const cred = await createUserWithEmailAndPassword(auth,email,pass);
     const uid = cred.user.uid;
 
-    await auth.currentUser.reload();
-
+    // Find referredBy if code provided
     let referredBy = null;
     if(refCode){
       const snap = await get(ref(db,"users"));
@@ -195,6 +195,7 @@ registerBtn.onclick = async () => {
       });
     }
 
+    // Write user data to database using the UID from created user
     await set(ref(db,"users/"+uid),{
       uid,name,email,phone,country,
       mainBalance:0,lockedBalance:0,referralBalance:0,
@@ -216,13 +217,15 @@ registerBtn.onclick = async () => {
       showToast("Invalid email address", false);
     } else if(e.code === "auth/weak-password"){
       showToast("Password is too weak", false);
+    } else if(e.code === "PERMISSION_DENIED") {
+      showToast("Database permission denied", false);
     } else {
       showToast(e.message,false);
     }
     console.error(e);
   }
 };
-</script>
+              </script>
 
 </body>
 </html>
