@@ -173,15 +173,20 @@ registerBtn.onclick = async () => {
   const refCode = referral.value.trim().toUpperCase();
 
   if(!name||!email||!phone||!country||!pass||!pass2){
-    showToast("Please complete all required fields",false); return;
+    showToast("Please complete all required fields",false); 
+    return;
   }
   if(pass!==pass2){
-    showToast("Passwords do not match",false); return;
+    showToast("Passwords do not match",false); 
+    return;
   }
 
   try{
     const cred = await createUserWithEmailAndPassword(auth,email,pass);
     const uid = cred.user.uid;
+
+    // Make sure auth state is fully updated
+    await auth.currentUser.reload();
 
     let referredBy = null;
     if(refCode){
@@ -191,12 +196,14 @@ registerBtn.onclick = async () => {
       });
     }
 
+    // Write to the user node exactly matching auth uid
     await set(ref(db,"users/"+uid),{
       uid,name,email,phone,country,
       mainBalance:0,lockedBalance:0,referralBalance:0,
       totalDeposited:0,totalProfit:0,totalWithdrawn:0,
       referralCode:genCode(),
       referredBy,
+      robotPurchased:false,
       createdAt:Date.now()
     });
 
@@ -204,7 +211,9 @@ registerBtn.onclick = async () => {
     setTimeout(()=>location.href="dashboard.html",1200);
 
   }catch(e){
+    // Show error properly
     showToast(e.message,false);
+    console.error(e);
   }
 };
 </script>
