@@ -88,7 +88,7 @@
 <script type="module">
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
 import { getAuth, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js";
-import { getDatabase, ref, onValue, query, orderByChild, equalTo } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-database.js";
+import { getDatabase, ref, onValue, update, query, orderByChild, equalTo, get } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-database.js";
 
 const app = initializeApp({
   apiKey: "AIzaSyDaEphuY2kQue8m-20DDs68JDgQirAycBE",
@@ -107,19 +107,50 @@ function showNotification(msg){
   setTimeout(()=>{ toast.style.display = "none"; }, 2000);
 }
 
-onAuthStateChanged(auth, user => {
+// Generate unique referral code
+async function generateUniqueCode(length = 6){
+  const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789';
+  let code = '';
+  let exists = true;
+
+  while(exists){
+    code = '';
+    for(let i=0;i<length;i++){
+      code += chars.charAt(Math.floor(Math.random() * chars.length));
+    }
+    exists = false;
+    const usersSnap = await get(ref(db,"users"));
+    if(usersSnap.exists()){
+      const users = usersSnap.val();
+      for(const key in users){
+        if(users[key].referralCode === code){
+          exists = true;
+          break;
+        }
+      }
+    }
+  }
+  return code;
+}
+
+onAuthStateChanged(auth, async user => {
   if(!user) return;
 
   const userRef = ref(db, "users/" + user.uid);
 
-  // Listen to your own referral data
-  onValue(userRef, snap => {
+  // Ensure referral code exists
+  onValue(userRef, async snap => {
     const data = snap.val() || {};
-    document.getElementById("code").innerText = data.referralCode || "—";
+    let code = data.referralCode;
+    if(!code){
+      code = await generateUniqueCode();
+      await update(userRef, { referralCode: code });
+    }
+    document.getElementById("code").innerText = code;
     document.getElementById("balance").innerText = data.referralBalance || 0;
   });
 
-  // Listen to users you referred
+  // Listen to referred users
   const referredQuery = query(ref(db,"users"), orderByChild("referredBy"), equalTo(user.uid));
   onValue(referredQuery, snap => {
     let totalReferral = 0;
@@ -144,12 +175,8 @@ onAuthStateChanged(auth, user => {
       if(deposited) totalReferral += 6;
     });
 
-    // Update own referral balance in DB if changed
-    if(totalReferral !== (user.referralBalance || 0)){
-      // Write only to your own node (rules-compliant)
-      ref(db, "users/" + user.uid).update({ referralBalance: totalReferral });
-    }
-
+    // Update own referral balance in DB
+    update(userRef, { referralBalance: totalReferral });
     document.getElementById("balance").innerText = totalReferral;
   });
 });
