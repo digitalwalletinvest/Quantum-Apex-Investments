@@ -173,6 +173,148 @@ onAuthStateChanged(auth, async user => {
 
   setInterval(async()=>{
     const snap=await get(payoutsRef);
+<script type="module">
+import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
+import { getAuth, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js";
+import { getDatabase, ref, get, set, push, update } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-database.js";
+
+const app = initializeApp({
+  apiKey:"AIzaSyDaEphuY2kQue8m-20DDs68JDgQirAycBE",
+  authDomain:"digital-wallet-40297.firebaseapp.com",
+  databaseURL:"https://digital-wallet-40297-default-rtdb.europe-west1.firebasedatabase.app",
+  projectId:"digital-wallet-40297"
+});
+
+const auth = getAuth(app);
+const db = getDatabase(app);
+
+const plans = [
+  { pair:'EURUSD', price:100, payout:200, days:3 },
+  { pair:'GBPUSD', price:200, payout:400, days:3 },
+  { pair:'USDJPY', price:400, payout:800, days:3 },
+  { pair:'AUDUSD', price:600, payout:1200, days:3 },
+  { pair:'USDCAD', price:800, payout:1600, days:3 },
+  { pair:'NZDUSD', price:1000, payout:2000, days:3 },
+  { pair:'EURGBP', price:2000, payout:4000, days:3 },
+  { pair:'EURJPY', price:4000, payout:8000, days:3 },
+  { pair:'GBPJPY', price:6000, payout:12000, days:3 },
+  { pair:'USDCHF', price:8000, payout:16000, days:3 },
+  { pair:'BTCUSD', price:10000, payout:20000, days:3 }
+];
+
+const plansContainer = document.getElementById("plansContainer");
+const purchaseBtn = document.getElementById("purchaseRobot");
+const userBalanceEl = document.getElementById("userBalance");
+const notification = document.getElementById("notification");
+
+const notify = msg => {
+  notification.innerText = msg;
+  notification.style.display = "block";
+  setTimeout(()=>notification.style.display="none",2500);
+};
+
+onAuthStateChanged(auth, async user => {
+  if(!user) return location.href="login.html";
+
+  const userRef = ref(db,"users/"+user.uid);
+  const payoutsRef = ref(db,"payouts/"+user.uid);
+
+  const userSnap = await get(userRef);
+  if (!userSnap.exists()) {
+    notify("User data not found. Please refresh.");
+    return;
+  }
+
+  const userData = userSnap.val();
+  const robotActive = !!userData.robotPurchased;
+
+  userBalanceEl.innerText =
+    `Balance: $${userData.mainBalance || 0} | Locked: $${userData.lockedBalance || 0}`;
+
+  if(robotActive){
+    purchaseBtn.innerText = "Robot active now";
+    purchaseBtn.classList.add("active");
+    purchaseBtn.disabled = true;
+  }
+
+  plansContainer.innerHTML = "";
+
+  plans.forEach(plan=>{
+    const div=document.createElement("div");
+    div.className="plan-card";
+    div.innerHTML=`
+      <strong>${plan.pair}</strong>
+      <div>Invest $${plan.price} → Earn $${plan.payout}</div>
+      <div class="countdown" id="cd-${plan.pair}"></div>
+      <button class="trade-btn ${!robotActive?'disabled':''}" id="btn-${plan.pair}">
+        Trade Now
+      </button>`;
+    plansContainer.appendChild(div);
+  });
+
+  const payoutsSnap = await get(payoutsRef);
+  const activePairs = {};
+
+  if(payoutsSnap.exists()){
+    Object.entries(payoutsSnap.val()).forEach(([id,p])=>{
+      if(!p.claimed){
+        activePairs[p.pair]=id;
+        const btn = document.getElementById(`btn-${p.pair}`);
+        if(btn){
+          btn.classList.add("active");
+          btn.innerText="Trading...";
+        }
+      }
+    });
+  }
+
+  plans.forEach(plan=>{
+    const btn=document.getElementById(`btn-${plan.pair}`);
+    if(!btn) return;
+
+    btn.onclick=async()=>{
+      if(!robotActive) return notify("Buy robot first");
+      if(activePairs[plan.pair]) return notify("Trade already active");
+
+      const snap=await get(userRef);
+      const u=snap.val();
+      if(u.mainBalance < plan.price) return notify("Insufficient balance");
+
+      const maturity=Date.now()+plan.days*86400000;
+      const refId=push(payoutsRef);
+
+      await set(refId,{
+        pair:plan.pair,
+        amount:plan.payout,
+        maturity,
+        claimed:false
+      });
+
+      await update(userRef,{
+        mainBalance:u.mainBalance-plan.price,
+        lockedBalance:(u.lockedBalance||0)+plan.payout
+      });
+
+      notify("Trade started");
+      location.reload();
+    };
+  });
+
+  purchaseBtn.onclick=async()=>{
+    if(robotActive) return;
+    if(userData.mainBalance <150) return notify("Insufficient balance");
+
+    await update(userRef,{
+      mainBalance:userData.mainBalance-150,
+      robotPurchased:true
+    });
+
+    notify("Robot activated");
+    location.reload();
+  };
+
+  setInterval(async()=>{
+    const snap=await get(payoutsRef);
     if(!snap.exists()) return;
 
     for(const [id,p] of Object.entries(snap.val())){
