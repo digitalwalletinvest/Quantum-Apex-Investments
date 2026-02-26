@@ -20,22 +20,27 @@ body { font-family: 'Inter', sans-serif; background: #0f172a; }
   display: none;
   z-index: 1000;
 }
+.countdown {
+  margin-top: 10px;
+  font-weight: bold;
+  color: #10b981;
+}
+.active-btn {
+  background: #0ea5e9 !important;
+}
 </style>
 </head>
 
 <body class="text-white min-h-screen flex flex-col">
 
-<!-- NAVBAR -->
 <nav class="flex justify-between items-center px-6 py-4 bg-slate-900 shadow-lg">
 <h1 class="text-2xl font-bold text-emerald-400">Investment Plans</h1>
 <button onclick="window.location.href='dashboard.html'" class="bg-gray-600 px-4 py-2 rounded hover:bg-gray-700">Back</button>
 </nav>
 
-<!-- INVESTMENT PLANS -->
 <section class="bg-slate-800 py-12 px-6 text-center flex-1">
 <h2 class="text-3xl font-bold mb-8">Investment Plans</h2>
 <div id="plansContainer" class="grid sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
-<!-- Dynamic plans will appear here -->
 </div>
 </section>
 
@@ -44,9 +49,8 @@ body { font-family: 'Inter', sans-serif; background: #0f172a; }
 <script type="module">
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
 import { getAuth, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js";
-import { getDatabase, ref, onValue, update, push, set } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-database.js";
+import { getDatabase, ref, onValue, update, push, set, get } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-database.js";
 
-/* ================= FIREBASE CONFIG ================= */
 const firebaseConfig = {
   apiKey: "AIzaSyDaEphuY2kQue8m-20DDs68JDgQirAycBE",
   authDomain: "digital-wallet-40297.firebaseapp.com",
@@ -72,23 +76,21 @@ function showToast(msg, success=true){
   setTimeout(()=> toast.style.display="none", 3000);
 }
 
-/* ================= INVESTMENT PLANS ================= */
 const plans = [
-  { name: "Plan $20", min: 20, roi: 40, duration: "7 Days" },
-  { name: "Plan $30", min: 30, roi: 40, duration: "7 Days" },
-  { name: "Plan $50", min: 50, roi: 40, duration: "7 Days" },
-  { name: "Plan $100", min: 100, roi: 40, duration: "7 Days" },
-  { name: "Plan $200", min: 200, roi: 40, duration: "7 Days" },
-  { name: "Plan $400", min: 400, roi: 40, duration: "7 Days" },
-  { name: "Plan $600", min: 600, roi: 40, duration: "7 Days" },
-  { name: "Plan $800", min: 800, roi: 40, duration: "7 Days" },
-  { name: "Plan $1000", min: 1000, roi: 40, duration: "7 Days" },
-  { name: "Plan $5000", min: 5000, roi: 40, duration: "7 Days" },
-  { name: "Plan $10000", min: 10000, roi: 40, duration: "7 Days" }
+  { name: "Plan $20", min: 20, roi: 40, durationDays: 7 },
+  { name: "Plan $30", min: 30, roi: 40, durationDays: 7 },
+  { name: "Plan $50", min: 50, roi: 40, durationDays: 7 },
+  { name: "Plan $100", min: 100, roi: 40, durationDays: 7 },
+  { name: "Plan $200", min: 200, roi: 40, durationDays: 7 },
+  { name: "Plan $400", min: 400, roi: 40, durationDays: 7 },
+  { name: "Plan $600", min: 600, roi: 40, durationDays: 7 },
+  { name: "Plan $800", min: 800, roi: 40, durationDays: 7 },
+  { name: "Plan $1000", min: 1000, roi: 40, durationDays: 7 },
+  { name: "Plan $5000", min: 5000, roi: 40, durationDays: 7 },
+  { name: "Plan $10000", min: 10000, roi: 40, durationDays: 7 }
 ];
 
-/* ================= AUTH ================= */
-onAuthStateChanged(auth, (user) => {
+onAuthStateChanged(auth, async (user) => {
   if (!user) {
     document.getElementById("plansContainer").innerHTML =
       "<h2 class='text-center text-red-400 text-xl col-span-full'>Please login first</h2>";
@@ -98,17 +100,28 @@ onAuthStateChanged(auth, (user) => {
   currentUser = user;
   const userRef = ref(db, "users/" + user.uid);
 
-  onValue(userRef, (snapshot) => {
+  onValue(userRef, async (snapshot) => {
     userData = snapshot.val() || { mainBalance: 0, lockedBalance: 0 };
     if (!snapshot.exists()) set(userRef, userData);
     renderPlans();
   });
 });
 
-/* ================= RENDER ================= */
-function renderPlans(){
+async function renderPlans(){
   const container = document.getElementById("plansContainer");
   container.innerHTML = "";
+
+  const invSnap = await get(ref(db, `investments/${currentUser.uid}`));
+  let activeInvestments = {};
+
+  if(invSnap.exists()){
+    invSnap.forEach(child=>{
+      const inv = child.val();
+      if(inv.status === "active"){
+        activeInvestments[inv.planName] = inv;
+      }
+    });
+  }
 
   plans.forEach(plan => {
     const payout = (plan.min * (1 + plan.roi / 100)).toFixed(2);
@@ -119,20 +132,50 @@ function renderPlans(){
     div.innerHTML = `
       <h3 class="text-xl font-semibold mb-2">${plan.name}</h3>
       <p class="text-2xl font-bold mb-2">${plan.roi}% ROI</p>
-      <p class="text-gray-400 mb-2">${plan.duration}</p>
+      <p class="text-gray-400 mb-2">${plan.durationDays} Days</p>
       <p class="text-gray-400 mb-2">Minimum $${plan.min}</p>
       <p class="text-emerald-400 font-semibold mb-4">Payout: $${payout}</p>
-      <button class="bg-emerald-500 px-4 py-2 rounded-full hover:bg-emerald-600 font-semibold">
+      <div class="countdown" id="cd-${plan.name}"></div>
+      <button id="btn-${plan.name}" class="bg-emerald-500 px-4 py-2 rounded-full hover:bg-emerald-600 font-semibold">
         Invest Now
       </button>
     `;
 
-    div.querySelector("button").addEventListener("click", ()=> invest(plan));
     container.appendChild(div);
+
+    const btn = document.getElementById(`btn-${plan.name}`);
+    const cd = document.getElementById(`cd-${plan.name}`);
+
+    if(activeInvestments[plan.name]){
+      btn.classList.add("active-btn");
+      btn.innerText = "Investment Ongoing";
+      btn.disabled = true;
+
+      const inv = activeInvestments[plan.name];
+      const maturity = inv.startTime + (plan.durationDays * 86400000);
+
+      const updateCountdown = ()=>{
+        const remaining = maturity - Date.now();
+        if(remaining > 0){
+          const days = Math.floor(remaining / 86400000);
+          const hrs = Math.floor((remaining % 86400000) / 3600000);
+          const mins = Math.floor((remaining % 3600000)/60000);
+          const secs = Math.floor((remaining % 60000)/1000);
+          cd.innerText = `⏱ ${days}d ${hrs}h ${mins}m ${secs}s remaining`;
+        } else {
+          cd.innerText = "Investment completed";
+        }
+      };
+
+      updateCountdown();
+      setInterval(updateCountdown,1000);
+
+    } else {
+      btn.addEventListener("click", ()=> invest(plan));
+    }
   });
 }
 
-/* ================= INVEST ================= */
 async function invest(plan){
   if(userData.mainBalance < plan.min){
     showToast("Insufficient balance", false);
@@ -155,7 +198,6 @@ async function invest(plan){
       roi: plan.roi,
       status: "active",
       startTime: Date.now(),
-      duration: plan.duration,
       payout: plan.min * (1 + plan.roi/100)
     });
 
