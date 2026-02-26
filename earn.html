@@ -24,6 +24,7 @@ body { margin:0; font-family:Arial,sans-serif; background:#0f172a; color:white; 
 .trade-btn { background:#16a34a; color:white; padding:0.8rem; border-radius:8px; font-weight:bold; width:100%; margin-top:0.8rem; }
 .trade-btn.disabled { background:#555; cursor:not-allowed; }
 .trade-btn.active { background:#0ea5e9; }
+.countdown { font-weight:bold; color:#10b981; margin-top:0.5rem; }
 </style>
 </head>
 
@@ -101,8 +102,7 @@ onAuthStateChanged(auth, async user => {
   const lockedBalance = userData.lockedBalance || 0;
   const robotPurchased = !!userData.robotPurchased;
 
-  userBalanceEl.innerText =
-    `Balance: $${mainBalance} | Locked: $${lockedBalance}`;
+  userBalanceEl.innerText = `Balance: $${mainBalance} | Locked: $${lockedBalance}`;
 
   if(robotPurchased){
     purchaseBtn.innerText = "Robot active now";
@@ -118,11 +118,46 @@ onAuthStateChanged(auth, async user => {
     div.innerHTML=`
       <strong>${plan.pair}</strong>
       <div>Invest $${plan.price} → Earn $${plan.payout}</div>
+      <div class="countdown" id="cd-${plan.pair}"></div>
       <button class="trade-btn ${!robotPurchased?'disabled':''}" id="btn-${plan.pair}">
         Trade Now
       </button>`;
     plansContainer.appendChild(div);
   });
+
+  const payoutsSnap = await get(payoutsRef);
+  const activePairs = {};
+
+  if(payoutsSnap.exists()){
+    Object.entries(payoutsSnap.val()).forEach(([id,p])=>{
+      if(!p.claimed){
+        activePairs[p.pair] = p;
+        const btn = document.getElementById(`btn-${p.pair}`);
+        const cdEl = document.getElementById(`cd-${p.pair}`);
+        if(btn && cdEl){
+          btn.classList.add("active");
+          btn.innerText = "Trade is ongoing";
+          // start countdown
+          const updateCountdown = () => {
+            const remaining = p.maturity - Date.now();
+            if(remaining > 0){
+              const hrs = Math.floor(remaining / 3600000);
+              const mins = Math.floor((remaining % 3600000)/60000);
+              const secs = Math.floor((remaining % 60000)/1000);
+              cdEl.innerText = `⏱ ${hrs}h ${mins}m ${secs}s remaining`;
+            } else {
+              cdEl.innerText = "Trade completed";
+              btn.classList.remove("active");
+              btn.classList.add("disabled");
+              btn.innerText = "Trade Now";
+            }
+          };
+          updateCountdown();
+          setInterval(updateCountdown,1000);
+        }
+      }
+    });
+  }
 
   plans.forEach(plan=>{
     const btn=document.getElementById(`btn-${plan.pair}`);
@@ -130,17 +165,17 @@ onAuthStateChanged(auth, async user => {
 
     btn.onclick=async()=>{
       if(!robotPurchased) return notify("Buy robot first");
+      if(activePairs[plan.pair]) return notify("Trade already active");
 
       const snap=await get(userRef);
       if(!snap.exists()) return notify("User missing");
-
-      const u=snap.val() || {};
-      const balance=u.mainBalance || 0;
-      const locked=u.lockedBalance || 0;
+      const u = snap.val() || {};
+      const balance = u.mainBalance || 0;
+      const locked = u.lockedBalance || 0;
 
       if(balance < plan.price) return notify("Insufficient balance");
 
-      const refId=push(payoutsRef);
+      const refId = push(payoutsRef);
 
       await set(refId,{
         pair:plan.pair,
@@ -150,8 +185,8 @@ onAuthStateChanged(auth, async user => {
       });
 
       await update(userRef,{
-        mainBalance:balance-plan.price,
-        lockedBalance:locked+plan.payout
+        mainBalance: balance - plan.price,
+        lockedBalance: locked + plan.payout
       });
 
       notify("Trade started");
@@ -164,7 +199,7 @@ onAuthStateChanged(auth, async user => {
     if(mainBalance <150) return notify("Insufficient balance");
 
     await update(userRef,{
-      mainBalance:mainBalance-150,
+      mainBalance: mainBalance-150,
       robotPurchased:true
     });
 
