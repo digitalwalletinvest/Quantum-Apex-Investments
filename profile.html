@@ -20,133 +20,151 @@ body{
   background:radial-gradient(circle at top, #1e293b, #020617);
   font-family:Inter,system-ui,sans-serif;
   color:#e5e7eb;
-  overflow:hidden;
 }
 
-/* Compact Card */
+/* Smaller professional card */
 .container{
   width:100%;
-  max-width:360px;
-  padding:1.6rem 1.5rem;
-  background:linear-gradient(180deg,#020617,#020617cc);
-  border-radius:18px;
+  max-width:310px;
+  padding:1.4rem 1.2rem;
+  background:rgba(2,6,23,.85);
+  backdrop-filter:blur(8px);
+  border-radius:16px;
   border:1px solid #1f2937;
   box-shadow:
-    0 15px 35px rgba(0,0,0,.7),
+    0 12px 28px rgba(0,0,0,.65),
     inset 0 1px 0 rgba(255,255,255,.03);
 }
 
-/* Header */
-.head-icon{
-  font-size:2.5rem;
-  text-align:center;
-  margin-bottom:.2rem;
+/* Avatar */
+.avatar{
+  width:60px;
+  height:60px;
+  border-radius:50%;
+  background:linear-gradient(135deg,#10b981,#059669);
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  font-size:1.6rem;
+  margin:0 auto 8px auto;
+  color:white;
+  font-weight:bold;
 }
+
+/* Title */
 .profile-title{
   text-align:center;
-  font-size:1.6rem;
-  font-weight:800;
+  font-size:1.35rem;
+  font-weight:700;
   color:#10b981;
-  letter-spacing:.3px;
-  margin-bottom:1.5rem;
+  margin-bottom:1.2rem;
 }
 
 /* Fields */
 .field-wrapper{
   position:relative;
-  margin-bottom:1rem;
+  margin-bottom:.9rem;
 }
+
 label{
   display:block;
-  font-size:.75rem;
+  font-size:.68rem;
   font-weight:600;
   letter-spacing:.3px;
   color:#94a3b8;
-  margin-bottom:.3rem;
+  margin-bottom:.25rem;
   text-transform:uppercase;
 }
+
 input{
   width:100%;
-  height:40px;
-  padding:0 .8rem;
-  border-radius:12px;
+  height:36px;
+  padding:0 .7rem;
+  border-radius:10px;
   background:#020617;
   border:1px solid #334155;
   color:#f9fafb;
-  font-size:.95rem;
+  font-size:.88rem;
   transition:border .2s, box-shadow .2s;
 }
+
 input:focus{
   outline:none;
   border-color:#10b981;
   box-shadow:0 0 0 2px rgba(16,185,129,.15);
 }
-input[disabled]{ background:#020617; color:#9ca3af; }
 
-/* Edit icon */
+input[disabled]{
+  background:#020617;
+  color:#9ca3af;
+}
+
+/* edit icon */
 .edit-icon{
   position:absolute;
-  right:12px;
+  right:10px;
   top:50%;
   transform:translateY(-50%);
   cursor:pointer;
   color:#10b981;
-  font-size:1rem;
+  font-size:.9rem;
   opacity:.75;
 }
 .edit-icon:hover{opacity:1}
 
-/* Divider */
+/* divider */
 .action-divider{
   height:1px;
   width:100%;
   background:linear-gradient(to right, transparent, #1f2937, transparent);
-  margin:1.5rem 0 1rem;
+  margin:1.2rem 0 .8rem;
 }
 
-/* Buttons */
+/* buttons */
 button{
-  height:42px;
+  height:38px;
   width:100%;
-  border-radius:12px;
-  font-weight:700;
-  letter-spacing:.3px;
-  font-size:.9rem;
+  border-radius:10px;
+  font-weight:600;
+  font-size:.85rem;
   transition:all .25s ease;
 }
+
 #saveBtn{
   background:linear-gradient(135deg,#10b981,#059669);
   color:#ecfdf5;
-  box-shadow:0 8px 18px rgba(16,185,129,.25);
+  box-shadow:0 6px 14px rgba(16,185,129,.25);
 }
+
 #saveBtn:hover{
   transform:translateY(-1px);
-  box-shadow:0 12px 24px rgba(16,185,129,.35);
+  box-shadow:0 10px 20px rgba(16,185,129,.35);
 }
+
 #logout{
-  margin-top:.8rem;
+  margin-top:.6rem;
   background:transparent;
   border:1px solid #374151;
   color:#9ca3af;
 }
+
 #logout:hover{
   border-color:#ef4444;
   color:#ef4444;
 }
 
-/* Toast */
+/* toast */
 .toast{
   position:fixed;
   bottom:1.5rem;
   left:50%;
   transform:translateX(-50%);
   background:#020617;
-  padding:12px 24px;
-  border-radius:12px;
-  box-shadow:0 15px 30px rgba(0,0,0,.7);
+  padding:10px 20px;
+  border-radius:10px;
+  box-shadow:0 12px 25px rgba(0,0,0,.7);
   display:none;
-  font-weight:700;
-  letter-spacing:.3px;
+  font-weight:600;
   z-index:1000;
 }
 </style>
@@ -155,40 +173,42 @@ button{
 <body>
 
 <div class="container">
-  <div class="head-icon">🗣️</div>
-  <div class="profile-title">Account Profile</div>
 
-  <div class="field-wrapper">
-    <label>Account ID</label>
-    <input id="accountId" disabled>
-  </div>
+<div class="avatar">👤</div>
+<div class="profile-title">Account Profile</div>
 
-  <div class="field-wrapper">
-    <label>Full Name</label>
-    <input id="name" disabled>
-    <span class="edit-icon" id="editName">✎</span>
-  </div>
+<div class="field-wrapper">
+<label>Account ID</label>
+<input id="accountId" disabled>
+</div>
 
-  <div class="field-wrapper">
-    <label>Email Address</label>
-    <input id="email" disabled>
-  </div>
+<div class="field-wrapper">
+<label>Full Name</label>
+<input id="name" disabled>
+<span class="edit-icon" id="editName">✎</span>
+</div>
 
-  <div class="field-wrapper">
-    <label>Phone Number</label>
-    <input id="phone" disabled>
-    <span class="edit-icon" id="editPhone">✎</span>
-  </div>
+<div class="field-wrapper">
+<label>Email Address</label>
+<input id="email" disabled>
+</div>
 
-  <div class="field-wrapper">
-    <label>Country</label>
-    <input id="country" disabled>
-  </div>
+<div class="field-wrapper">
+<label>Phone Number</label>
+<input id="phone" disabled>
+<span class="edit-icon" id="editPhone">✎</span>
+</div>
 
-  <div class="action-divider"></div>
+<div class="field-wrapper">
+<label>Country</label>
+<input id="country" disabled>
+</div>
 
-  <button id="saveBtn">Save Changes</button>
-  <button id="logout">Sign Out</button>
+<div class="action-divider"></div>
+
+<button id="saveBtn">Save Changes</button>
+<button id="logout">Sign Out</button>
+
 </div>
 
 <div id="toast" class="toast"></div>
