@@ -49,7 +49,7 @@ body { background:#0f172a; font-family: 'Inter', sans-serif; }
   <h2 class="text-xl font-semibold mb-2">Deposit Method</h2>
   <select id="depositMethod" class="w-full p-3 rounded bg-slate-700">
     <option value="">Select Method</option>
-    <option value="phone">Mobile Money</option>
+    <option value="Mobile Money">Mobile Money</option>
     <option value="crypto">Crypto</option>
   </select>
 
@@ -174,14 +174,14 @@ depositBtn.addEventListener("click", async ()=>{
 
   const uid = auth.currentUser.uid;
 
-  if(method === "phone"){
+  if(method === "Mobile Money"){
     const phone = document.getElementById("phoneNumber").value.trim();
     if(!phone){ showToast("Enter phone number"); return; }
 
     const depositRef = push(ref(db, `deposits/${uid}`)); // UID included in path
     await set(depositRef,{
       userId: uid,
-      method: "phone",
+      method: "Mobile Money",
       phone,
       amount: 20,
       timestamp: Date.now(),
