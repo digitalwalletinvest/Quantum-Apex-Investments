@@ -112,14 +112,14 @@ onAuthStateChanged(auth, user => {
 
   const userRef = ref(db, "users/" + user.uid);
 
-  // Listen to your own referral data (referralCode guaranteed from registration)
+  // Listen to your own referral data
   onValue(userRef, snap => {
     const data = snap.val() || {};
     document.getElementById("code").innerText = data.referralCode || "—";
     document.getElementById("balance").innerText = data.referralBalance || 0;
   });
 
-  // Listen to referred users deposits
+  // Listen to referred users
   const referredQuery = query(ref(db,"users"), orderByChild("referredBy"), equalTo(user.uid));
   onValue(referredQuery, snap => {
     let totalReferral = 0;
@@ -144,7 +144,7 @@ onAuthStateChanged(auth, user => {
       if(deposited) totalReferral += 6;
     });
 
-    // Update referralBalance in your own node (rules-compliant)
+    // Update referrer balance immediately when referral deposits
     update(userRef, { referralBalance: totalReferral });
     document.getElementById("balance").innerText = totalReferral;
   });
@@ -158,4 +158,4 @@ document.getElementById("copyBtn").addEventListener("click", ()=>{
 </script>
 
 </body>
-</html> 
+</html>
