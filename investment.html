@@ -243,28 +243,34 @@ activeDiv.innerHTML="<p class='text-gray-400'>No active investments</p>";
 
 });
 
-onValue(payoutsRef,snapshot=>{
+const tradeTimers = {};
 
-const tradesDiv=document.getElementById("trades");
-tradesDiv.innerHTML="";
+onValue(payoutsRef, snapshot => {
 
-let found=false;
+const tradesDiv = document.getElementById("trades");
+tradesDiv.innerHTML = "";
 
-snapshot.forEach(child=>{
+let found = false;
 
-const trade=child.val();
+snapshot.forEach(child => {
+
+const trade = child.val();
+const id = child.key;
+
 if(trade.claimed) return;
 
-found=true;
+found = true;
 
-const start = Number(trade.timestamp) || Date.now();
+const start = Number(trade.timestamp);
+if(!start) return; // prevents timer reset
+
 const durationMs = 3*86400000;
 const end = start + durationMs;
 
-const div=document.createElement("div");
-div.className="card";
+const div = document.createElement("div");
+div.className = "card";
 
-div.innerHTML=`
+div.innerHTML = `
 
 <div class="font-semibold">
 Robot Trade: ${trade.pair || "Auto Trade"}
@@ -275,17 +281,17 @@ Amount: $${trade.amount} | Status: ${trade.status || 'Trading...'}
 </div>
 
 <div class="progress-bar-container">
-<div class="progress-bar" id="trade-progress-${child.key}"></div>
+<div class="progress-bar" id="trade-progress-${id}"></div>
 </div>
 
-<div class="text-gray-400 text-xs mt-1" id="trade-time-${child.key}"></div>
+<div class="text-gray-400 text-xs mt-1" id="trade-time-${id}"></div>
 
 `;
 
 tradesDiv.appendChild(div);
 
-const progressEl=document.getElementById(`trade-progress-${child.key}`);
-const timeEl=document.getElementById(`trade-time-${child.key}`);
+const progressEl = document.getElementById(`trade-progress-${id}`);
+const timeEl = document.getElementById(`trade-time-${id}`);
 
 function updateTrade(){
 
@@ -297,8 +303,7 @@ progressEl.style.width = percent + "%";
 
 const remaining = end - now;
 
-timeEl.innerText =
-"Time remaining: " + formatTime(remaining);
+timeEl.innerText = "Time remaining: " + formatTime(remaining);
 
 if(percent >= 100){
 progressEl.classList.add("gold");
@@ -308,7 +313,10 @@ timeEl.innerText = "Trade completed";
 }
 
 updateTrade();
-setInterval(updateTrade,1000);
+
+if(tradeTimers[id]) clearInterval(tradeTimers[id]);
+
+tradeTimers[id] = setInterval(updateTrade,1000);
 
 });
 
