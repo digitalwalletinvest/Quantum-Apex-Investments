@@ -257,8 +257,9 @@ if(trade.claimed) return;
 
 found=true;
 
-const start=Number(trade.timestamp);
-const durationMs=3*86400000;
+const start = Number(trade.timestamp) || Date.now();
+const durationMs = 3*86400000;
+const end = start + durationMs;
 
 const div=document.createElement("div");
 div.className="card";
@@ -266,11 +267,11 @@ div.className="card";
 div.innerHTML=`
 
 <div class="font-semibold">
-Robot Trade: ${trade.pair}
+Robot Trade: ${trade.pair || "Auto Trade"}
 </div>
 
 <div class="text-gray-400">
-Amount: $${trade.amount} | Status: ${trade.status||'Trading...'}
+Amount: $${trade.amount} | Status: ${trade.status || 'Trading...'}
 </div>
 
 <div class="progress-bar-container">
@@ -288,14 +289,21 @@ const timeEl=document.getElementById(`trade-time-${child.key}`);
 
 function updateTrade(){
 
-const now=Date.now();
-const elapsed=now-start;
-const percent=Math.min((elapsed/durationMs)*100,100);
+const now = Date.now();
+const elapsed = now - start;
+const percent = Math.min((elapsed/durationMs)*100,100);
 
-progressEl.style.width=percent+"%";
+progressEl.style.width = percent + "%";
 
-timeEl.innerText=
-"Time elapsed: "+formatTime(elapsed)+" / "+formatTime(durationMs);
+const remaining = end - now;
+
+timeEl.innerText =
+"Time remaining: " + formatTime(remaining);
+
+if(percent >= 100){
+progressEl.classList.add("gold");
+timeEl.innerText = "Trade completed";
+}
 
 }
 
@@ -308,7 +316,6 @@ if(!found)
 tradesDiv.innerHTML="<p class='text-gray-400'>No trades yet</p>";
 
 });
-
 });
 
 </script>
