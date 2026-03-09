@@ -1,31 +1,25 @@
 {
-  "name": "Quantum Apex Yield",
-  "short_name": "Quantum Apex",
-  "description": "Structured digital investments with consistent 20% returns.",
+  "name": "Quantum Apex Investments",
+  "short_name": "QuantumApex",
   "start_url": "/Quantum-Apex-Investments/index.html",
   "display": "standalone",
-  "background_color": "#020617",
+  "background_color": "#0f172a",
   "theme_color": "#0f172a",
-  "orientation": "portrait",
-  "scope": "/Quantum-Apex-Investments/",
   "icons": [
     {
-      "src": "/Quantum-Apex-Investments/icons/icon-152.png",
+      "src": "https://digitalwalletinvest.github.io/Quantum-Apex-Investments/icons/icon-152.png",
       "sizes": "152x152",
-      "type": "image/png",
-      "purpose": "any maskable"
+      "type": "image/png"
     },
     {
-      "src": "/Quantum-Apex-Investments/icons/icon-192.png",
+      "src": "https://digitalwalletinvest.github.io/Quantum-Apex-Investments/icons/icon-192.png",
       "sizes": "192x192",
-      "type": "image/png",
-      "purpose": "any maskable"
+      "type": "image/png"
     },
     {
-      "src": "/Quantum-Apex-Investments/icons/icon-512.png",
+      "src": "https://digitalwalletinvest.github.io/Quantum-Apex-Investments/icons/icon-512.png",
       "sizes": "512x512",
-      "type": "image/png",
-      "purpose": "any maskable"
+      "type": "image/png"
     }
   ]
 }
