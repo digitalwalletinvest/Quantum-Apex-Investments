@@ -1,14 +1,13 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Deposit - Quantum Apex</title>
-
-<script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js"></script>
-<script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js"></script>
-<script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-database.js"></script>
-<script src="https://cdn.tailwindcss.com"></script>
+<!DOCTYPE html>  
+<html lang="en">  
+<head>  
+<meta charset="UTF-8">  
+<meta name="viewport" content="width=device-width, initial-scale=1.0">  
+<title>Deposit - Quantum Apex</title>  
+<script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js"></script>  
+<script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js"></script>  
+<script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-database.js"></script>  
+<script src="https://cdn.tailwindcss.com"></script>  
 
 <style>
 body {
@@ -70,25 +69,20 @@ body {
   transform:scale(1.05);
 }
 </style>
-</head>
+</head>  
+<body class="text-white min-h-screen flex flex-col">  
 
-<body class="text-white min-h-screen flex flex-col">
-
-<!-- Navbar -->
 <nav class="flex justify-between items-center px-6 py-4 bg-slate-900 shadow-lg">
   <h1 class="text-2xl font-bold text-emerald-400">Deposit Funds</h1>
   <button onclick="window.location.href='dashboard.html'" class="bg-gray-600 px-4 py-2 rounded hover:bg-gray-700">Back</button>
 </nav>
 
-<!-- Warning -->
 <div class="bg-red-600 text-center py-3 font-semibold">
   ⚠ Minimum Deposit is <span class="text-yellow-300">$50</span>
 </div>
 
-<!-- Main Section -->
 <section class="flex-1 p-6 space-y-6">
 
-  <!-- Deposit Method -->
   <div class="bg-slate-800 p-6 rounded-2xl space-y-4 shadow-lg hover:shadow-2xl transition">
     <h2 class="text-xl font-semibold">Deposit Method</h2>
     <select id="depositMethod" class="w-full p-3 rounded bg-slate-700 border border-gray-600">
@@ -104,15 +98,11 @@ body {
     </button>
   </div>
 
-  <!-- Deposit Instructions -->
   <div class="bg-slate-800 p-6 rounded-2xl shadow-lg hover:shadow-2xl transition">
     <h3 class="font-semibold mb-4">Deposit Instructions</h3>
-    <div id="instructions" class="space-y-4 text-sm text-gray-300">
-      <!-- Dynamic instructions appear here -->
-    </div>
+    <div id="instructions" class="space-y-4 text-sm text-gray-300"></div>
   </div>
 
-  <!-- Balance -->
   <div class="bg-slate-800 p-6 rounded-2xl shadow-lg hover:shadow-2xl transition">
     <h3 class="font-semibold mb-2">Your Current Balance</h3>
     <p id="currentBalance" class="text-emerald-400 text-2xl">$0.00</p>
@@ -120,10 +110,7 @@ body {
 
 </section>
 
-<!-- Toast Notification -->
 <div id="toast" class="toast"></div>
-
-<!-- WhatsApp Support Button -->
 <a href="https://wa.me/254732364593" target="_blank" class="support-btn">Support</a>
 
 <script type="module">
@@ -133,10 +120,10 @@ import { getAuth,onAuthStateChanged } from "https://www.gstatic.com/firebasejs/1
 import { getDatabase,ref,onValue,push,set } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-database.js";
 
 const app = initializeApp({
-apiKey:"AIzaSyDaEphuY2kQue8m-20DDs68JDgQirAycBE",
-authDomain:"digital-wallet-40297.firebaseapp.com",
-databaseURL:"https://digital-wallet-40297-default-rtdb.europe-west1.firebasedatabase.app",
-projectId:"digital-wallet-40297"
+  apiKey:"AIzaSyDaEphuY2kQue8m-20DDs68JDgQirAycBE",
+  authDomain:"digital-wallet-40297.firebaseapp.com",
+  databaseURL:"https://digital-wallet-40297-default-rtdb.europe-west1.firebasedatabase.app",
+  projectId:"digital-wallet-40297"
 });
 
 const auth=getAuth(app);
@@ -162,7 +149,6 @@ function copyText(t){
   showToast("Copied to clipboard");
 }
 
-// Handle deposit method selection
 method.addEventListener("change",()=>{
   depositBtn.disabled=true;
   depositBtn.classList.add("opacity-50");
@@ -214,32 +200,22 @@ method.addEventListener("change",()=>{
     cryptoType.addEventListener("change",()=>{
       checkCrypto();
 
+      let walletAddress="";
       if(cryptoType.value==="ERC20"){
-        instructions.innerHTML=`
-          <div>
-            <h4 class="text-emerald-400 font-semibold">USDT Wallet (ERC20)</h4>
-            <div class="copy" onclick="copyText('${USDT_ERC20}')">${USDT_ERC20}</div>
-            <img class="mt-2 w-40 rounded-lg shadow-lg" src="https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=${USDT_ERC20}">
-          </div>`;
-        walletDisplay.innerText=USDT_ERC20;
-        walletDisplay.onclick=()=>copyText(USDT_ERC20);
-        walletQR.src=`https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=${USDT_ERC20}`;
+        walletAddress=USDT_ERC20;
       } else if(cryptoType.value==="TRC20"){
-        instructions.innerHTML=`
-          <div>
-            <h4 class="text-emerald-400 font-semibold">USDT Wallet (TRC20)</h4>
-            <div class="copy" onclick="copyText('${USDT_TRC20}')">${USDT_TRC20}</div>
-            <img class="mt-2 w-40 rounded-lg shadow-lg" src="https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=${USDT_TRC20}">
-            <span class="trc-label">TRC20</span>
-          </div>`;
-        walletDisplay.innerText=USDT_TRC20;
-        walletDisplay.onclick=()=>copyText(USDT_TRC20);
-        walletQR.src=`https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=${USDT_TRC20}`;
-      } else {
-        instructions.innerHTML="";
-        walletDisplay.innerText="";
-        walletQR.src="";
+        walletAddress=USDT_TRC20;
       }
+      walletDisplay.innerText=walletAddress;
+      walletDisplay.onclick=()=>copyText(walletAddress);
+      walletQR.src=`https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=${walletAddress}`;
+      instructions.innerHTML=`
+        <div>
+          <h4 class="text-emerald-400 font-semibold">USDT Wallet (${cryptoType.value})</h4>
+          <div class="copy" onclick="copyText('${walletAddress}')">${walletAddress}</div>
+          <img class="mt-2 w-40 rounded-lg shadow-lg" src="https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=${walletAddress}">
+          ${cryptoType.value==="TRC20"?'<span class="trc-label">TRC20</span>':''}
+        </div>`;
     });
   }
 });
@@ -274,8 +250,10 @@ depositBtn.addEventListener("click", async ()=>{
   if(method.value==="crypto"){
     const cryptoType=document.getElementById("cryptoSelect").value;
     const amount=parseFloat(document.getElementById("cryptoAmount").value);
+    const walletAddress=cryptoType==="ERC20"?USDT_ERC20:USDT_TRC20;
     data.method="crypto";
     data.walletType=cryptoType;
+    data.walletAddress=walletAddress; // <-- Save wallet address
     data.amount=amount;
   }
 
