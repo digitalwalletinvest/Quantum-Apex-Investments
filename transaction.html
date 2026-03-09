@@ -23,7 +23,7 @@ h2 { text-align:center; margin-bottom:1.5rem; color:#10b981; font-weight:bold; f
 .card-header span { font-weight:bold; }
 
 .card-body { margin-top:0.5rem; display:none; border-top:1px solid #334155; padding-top:0.5rem; }
-.card-body p { margin:4px 0; color:#cbd5f5; font-size:14px; }
+.card-body p { margin:4px 0; color:#cbd5f5; font-size:14px; display:flex; align-items:center; gap:6px; }
 
 .section-title { font-size:15px; font-weight:bold; color:#94a3b8; margin-top:1rem; margin-bottom:.5rem; }
 .method-icon { width:20px; height:20px; }
@@ -79,25 +79,33 @@ function getStatusClass(status){
 
 function getMethodIcon(method){
     if(method==="crypto") return '<img src="https://upload.wikimedia.org/wikipedia/commons/4/46/Bitcoin.svg" class="method-icon" title="Crypto">';
-    if(method==="mobile") return '<img src="https://upload.wikimedia.org/wikipedia/commons/3/3b/Mobile_icon.svg" class="method-icon" title="Mobile Money">';
-    return '';
+    if(method==="usdt") return '<img src="https://upload.wikimedia.org/wikipedia/commons/2/26/Tether-logo.svg" class="method-icon" title="USDT (TRC20)">';
+    return ''; // No icon for mobile/Airtel
 }
 
 function createCard(tx){
     const card = document.createElement("div");
     card.className = "card " + getStatusClass(tx.status);
 
+    let displayMethod = tx.method;
+    if(tx.method === "mobile") displayMethod = "Airtel Mobile Money";
+
     const icon = getMethodIcon(tx.method);
+
+    // Show icon in body too for crypto/USDT
+    const bodyDetails = tx.method==="crypto" || tx.method==="usdt" ?
+        `<p>${icon} Wallet Address: ${tx.details}</p>` :
+        `<p>Mobile Number: ${tx.details}</p>`;
 
     card.innerHTML = `
     <div class="card-header">
-        <h3>${icon}${tx.method || "N/A"}</h3>
+        <h3>${icon}${displayMethod || "N/A"}</h3>
         <span>$${tx.amount.toFixed(2)}</span>
     </div>
     <div class="card-body">
         <p>Time: ${formatDate(tx.timestamp)}</p>
         <p>Status: ${tx.status}</p>
-        <p>${tx.method==="crypto" ? "Wallet Address: " + tx.details : "Mobile Number: " + tx.details}</p>
+        ${bodyDetails}
     </div>
     `;
 
