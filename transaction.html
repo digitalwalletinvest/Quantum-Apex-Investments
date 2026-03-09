@@ -31,6 +31,7 @@ h2 { text-align:center; margin-bottom:1.5rem; color:#10b981; font-weight:bold; f
 .status-approved { background:#1f3321; border-left:4px solid #22c55e; }
 .status-rejected { background:#3d1f1f; border-left:4px solid #ef4444; }
 .status-pending { background:#3a2f1f; border-left:4px solid #a16207; }
+.trc-label { font-size:12px; color:#10b981; font-weight:bold; }
 </style>
 </head>
 <body>
@@ -77,9 +78,10 @@ function getStatusClass(status){
     return "";
 }
 
+// USDT icon with TRC20 label
 function getMethodIcon(method){
-    if(method==="crypto") return '<img src="https://upload.wikimedia.org/wikipedia/commons/4/46/Bitcoin.svg" class="method-icon" title="Crypto">';
-    if(method==="usdt") return '<img src="https://upload.wikimedia.org/wikipedia/commons/2/26/Tether-logo.svg" class="method-icon" title="USDT (TRC20)">';
+    if(method==="crypto" || method==="usdt") 
+        return '<img src="https://upload.wikimedia.org/wikipedia/commons/2/26/Tether-logo.svg" class="method-icon" title="USDT (TRC20)"><span class="trc-label">TRC20</span>';
     return ''; // No icon for mobile/Airtel
 }
 
@@ -92,7 +94,6 @@ function createCard(tx){
 
     const icon = getMethodIcon(tx.method);
 
-    // Show icon in body too for crypto/USDT
     const bodyDetails = tx.method==="crypto" || tx.method==="usdt" ?
         `<p>${icon} Wallet Address: ${tx.details}</p>` :
         `<p>Mobile Number: ${tx.details}</p>`;
