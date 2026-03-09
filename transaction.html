@@ -137,12 +137,14 @@ if(status==="rejected") return "status-rejected";
 return "";
 }
 
+/* Detect transaction method correctly from Firebase */
+
 function getMethod(tx){
 
-if(tx.walletType==="TRC20") return "USDT TRC20";
-if(tx.walletType==="ERC20") return "USDT ERC20";
+if(tx.receivingAddressType==="TRC20") return "USDT TRC20";
+if(tx.receivingAddressType==="ERC20") return "USDT ERC20";
 
-if(tx.method==="mobile_agent") return "Airtel Money";
+if(tx.phoneNumber) return "Mobile Money";
 
 return "USDT";
 
@@ -157,7 +159,8 @@ card.className="card "+(type==="deposit"?"deposit":"withdraw");
 const method=getMethod(tx);
 const status=tx.status || "pending";
 
-const wallet=tx.walletAddress || tx.address || "N/A";
+const wallet=tx.receivingAddress || "N/A";
+const phone=tx.phoneNumber || "N/A";
 
 card.innerHTML=`
 
@@ -195,7 +198,9 @@ ${status}
 
 <p><b>Time:</b> ${formatDate(tx.timestamp)}</p>
 
-${type==="withdraw"?`<p><b>Wallet:</b> ${wallet}</p>`:""}
+${tx.receivingAddress?`<p><b>Receiving Address:</b> ${wallet}</p>`:""}
+
+${tx.phoneNumber?`<p><b>Phone Number:</b> ${phone}</p>`:""}
 
 </div>
 
