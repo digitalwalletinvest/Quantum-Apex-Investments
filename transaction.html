@@ -1,280 +1,139 @@
-<!DOCTYPE html>    
-<html lang="en">    
-<head>    
-<meta charset="UTF-8">    
-<meta name="viewport" content="width=device-width, initial-scale=1.0">    
-<title>Transactions - Quantum Apex</title>    
-    
-<script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js"></script>    
-<script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js"></script>    
-<script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-database.js"></script>    
-<script src="https://cdn.tailwindcss.com"></script>    
-    
-<style>    
-body{background:#0f172a;font-family:Inter,sans-serif;color:white;}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Transactions - Quantum Apex</title>
+<script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-database.js"></script>
+<script src="https://cdn.tailwindcss.com"></script>
 
-.container{
-max-width:800px;
-margin:2rem auto;
-padding:1.5rem;
-background:#1e293b;
-border-radius:14px;
-}
+<style>
+body { background:#0f172a; font-family:Inter,sans-serif; color:white; }
+.container { max-width:900px; margin:2rem auto; padding:1rem; }
+h2 { text-align:center; margin-bottom:1.5rem; color:#10b981; font-weight:bold; font-size:1.8rem; }
 
-h2{
-text-align:center;
-margin-bottom:1.5rem;
-color:#10b981;
-font-weight:bold;
-font-size:1.8rem;
-}
+.card { border-radius:14px; padding:1rem 1.5rem; margin-bottom:1rem;
+    cursor:pointer; transition: transform .2s, box-shadow .2s; display:flex; flex-direction:column; }
+.card:hover { transform: translateY(-2px); box-shadow: 0 8px 20px rgba(0,0,0,.5); }
 
-.section-title{
-font-size:15px;
-font-weight:bold;
-color:#94a3b8;
-margin-top:1rem;
-margin-bottom:.5rem;
-}
+.card-header { display:flex; justify-content:space-between; align-items:center; }
+.card-header h3 { font-weight:bold; color:#cbd5f5; font-size:16px; display:flex; align-items:center; gap:6px; }
+.card-header span { font-weight:bold; }
 
-.table{
-width:100%;
-border-collapse:collapse;
-}
+.card-body { margin-top:0.5rem; display:none; border-top:1px solid #334155; padding-top:0.5rem; }
+.card-body p { margin:4px 0; color:#cbd5f5; font-size:14px; }
 
-.table th,.table td{
-padding:.6rem;
-text-align:left;
-border-bottom:1px solid #334155;
-font-size:14px;
-}
+.section-title { font-size:15px; font-weight:bold; color:#94a3b8; margin-top:1rem; margin-bottom:.5rem; }
+.method-icon { width:20px; height:20px; }
 
-.table tr{
-cursor:pointer;
-transition:background .2s;
-}
+.status-approved { background:#1f3321; border-left:4px solid #22c55e; }
+.status-rejected { background:#3d1f1f; border-left:4px solid #ef4444; }
+.status-pending { background:#3a2f1f; border-left:4px solid #a16207; }
+</style>
+</head>
+<body>
 
-.table tr:hover{
-background:#334155;
-}
+<div class="container">
+<h2>Transaction History</h2>
 
-.status-approved{color:#22c55e;font-weight:bold;}
-.status-rejected{color:#ef4444;font-weight:bold;}
-.status-pending{color:#a16207;font-weight:bold;}
+<div class="section-title">Deposits</div>
+<div id="depositContainer">
+  <p class="text-slate-400 text-center">Loading...</p>
+</div>
 
-.modal{
-position:fixed;
-top:0;
-left:0;
-width:100%;
-height:100%;
-background:rgba(0,0,0,.6);
-display:none;
-align-items:center;
-justify-content:center;
-z-index:1000;
-}
-
-.modal-content{
-background:#1e293b;
-padding:25px;
-border-radius:12px;
-width:90%;
-max-width:400px;
-}
-
-.modal-content h3{
-font-size:18px;
-margin-bottom:12px;
-color:#10b981;
-}
-
-.modal-content p{
-margin:6px 0;
-color:#cbd5f5;
-}
-
-.closeBtn{
-margin-top:15px;
-background:#334155;
-padding:8px 12px;
-border-radius:6px;
-cursor:pointer;
-}
-
-.closeBtn:hover{
-background:#475569;
-}
-
-</style>    
-</head>    
-    
-<body>    
-    
-<div class="container">    
-<h2>Transaction History</h2>    
-    
-<div>    
-<div class="section-title">Deposits</div>    
-<table class="table">    
-<thead>    
-<tr>    
-<th>Date</th>    
-<th>Amount</th>    
-<th>Method</th>    
-<th>Status</th>    
-</tr>    
-</thead>    
-<tbody id="depositTable">    
-<tr><td colspan="4" class="text-center text-slate-400">Loading...</td></tr>    
-</tbody>    
-</table>    
-</div>    
-    
-<div>    
-<div class="section-title">Withdrawals</div>    
-<table class="table">    
-<thead>    
-<tr>    
-<th>Date</th>    
-<th>Amount</th>    
-<th>Method</th>    
-<th>Status</th>    
-</tr>    
-</thead>    
-<tbody id="withdrawTable">    
-<tr><td colspan="4" class="text-center text-slate-400">Loading...</td></tr>    
-</tbody>    
-</table>    
-</div>    
-</div>    
-    
-<!-- Transaction Details Modal -->
-<div id="txModal" class="modal">
-<div class="modal-content">
-<h3>Transaction Details</h3>
-<p id="txMethod"></p>
-<p id="txDetails"></p>
-<p id="txAmount"></p>
-<p id="txTime"></p>
-<p id="txStatus"></p>
-<div class="closeBtn" onclick="closeModal()">Close</div>
+<div class="section-title">Withdrawals</div>
+<div id="withdrawContainer">
+  <p class="text-slate-400 text-center">Loading...</p>
 </div>
 </div>
-    
-<script type="module">    
-import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";    
-import { getAuth, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js";    
-import { getDatabase, ref, onValue } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-database.js";    
-    
-const app = initializeApp({    
-apiKey:"AIzaSyDaEphuY2kQue8m-20DDs68JDgQirAycBE",    
-authDomain:"digital-wallet-40297.firebaseapp.com",    
-databaseURL:"https://digital-wallet-40297-default-rtdb.europe-west1.firebasedatabase.app",    
-projectId:"digital-wallet-40297"    
-});    
-    
-const auth=getAuth(app);    
-const db=getDatabase(app);    
-    
-const depositTable=document.getElementById("depositTable");    
-const withdrawTable=document.getElementById("withdrawTable");    
-    
-function formatDate(t){
-return new Date(t).toLocaleString();
-}
+
+<script type="module">
+import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
+import { getAuth, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js";
+import { getDatabase, ref, onValue } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-database.js";
+
+const app = initializeApp({
+    apiKey:"AIzaSyDaEphuY2kQue8m-20DDs68JDgQirAycBE",
+    authDomain:"digital-wallet-40297.firebaseapp.com",
+    databaseURL:"https://digital-wallet-40297-default-rtdb.europe-west1.firebasedatabase.app",
+    projectId:"digital-wallet-40297"
+});
+
+const auth = getAuth(app);
+const db = getDatabase(app);
+
+const depositContainer = document.getElementById("depositContainer");
+const withdrawContainer = document.getElementById("withdrawContainer");
+
+function formatDate(ts){ return new Date(ts).toLocaleString(); }
 
 function getStatusClass(status){
-const s=status.toLowerCase();
-if(s==="approved") return "status-approved";
-if(s==="rejected") return "status-rejected";
-if(s==="pending") return "status-pending";
-return "";
+    const s = status.toLowerCase();
+    if(s==="approved") return "status-approved";
+    if(s==="rejected") return "status-rejected";
+    if(s==="pending") return "status-pending";
+    return "";
 }
 
-function openModal(data){
-document.getElementById("txModal").style.display="flex";
-
-document.getElementById("txMethod").innerText="Method: "+data.method;
-
-if(data.method==="crypto"){
-document.getElementById("txDetails").innerText="Wallet Address: "+data.details;
-}else{
-document.getElementById("txDetails").innerText="Mobile Number: "+data.details;
+function getMethodIcon(method){
+    if(method==="crypto") return '<img src="https://upload.wikimedia.org/wikipedia/commons/4/46/Bitcoin.svg" class="method-icon" title="Crypto">';
+    if(method==="mobile") return '<img src="https://upload.wikimedia.org/wikipedia/commons/3/3b/Mobile_icon.svg" class="method-icon" title="Mobile Money">';
+    return '';
 }
 
-document.getElementById("txAmount").innerText="Amount: $"+data.amount.toFixed(2);
-document.getElementById("txTime").innerText="Time: "+formatDate(data.timestamp);
-document.getElementById("txStatus").innerText="Status: "+data.status;
+function createCard(tx){
+    const card = document.createElement("div");
+    card.className = "card " + getStatusClass(tx.status);
+
+    const icon = getMethodIcon(tx.method);
+
+    card.innerHTML = `
+    <div class="card-header">
+        <h3>${icon}${tx.method || "N/A"}</h3>
+        <span>$${tx.amount.toFixed(2)}</span>
+    </div>
+    <div class="card-body">
+        <p>Time: ${formatDate(tx.timestamp)}</p>
+        <p>Status: ${tx.status}</p>
+        <p>${tx.method==="crypto" ? "Wallet Address: " + tx.details : "Mobile Number: " + tx.details}</p>
+    </div>
+    `;
+
+    card.querySelector(".card-header").onclick = () => {
+        const body = card.querySelector(".card-body");
+        body.style.display = body.style.display==="block"?"none":"block";
+    }
+
+    return card;
 }
 
-window.closeModal=function(){
-document.getElementById("txModal").style.display="none";
-}
+onAuthStateChanged(auth, user => {
+    if(!user) location.href="login.html";
 
-onAuthStateChanged(auth,user=>{
-if(!user) location.href="login.html";
+    const depositsRef = ref(db,"deposits/"+user.uid);
+    onValue(depositsRef, snap=>{
+        depositContainer.innerHTML = "";
+        if(!snap.exists()){
+            depositContainer.innerHTML = `<p class="text-center text-slate-400">No transactions</p>`;
+            return;
+        }
+        Object.values(snap.val()).sort((a,b)=>b.timestamp-a.timestamp)
+        .forEach(tx => depositContainer.appendChild(createCard(tx)));
+    });
 
-const depositsRef=ref(db,"deposits/"+user.uid);
-onValue(depositsRef,snapshot=>{
-depositTable.innerHTML="";
-if(!snapshot.exists()){
-depositTable.innerHTML=`<tr><td colspan="4" class="text-center text-slate-400">No transactions</td></tr>`;
-return;
-}
-
-Object.values(snapshot.val())
-.sort((a,b)=>b.timestamp-a.timestamp)
-.forEach(d=>{
-
-const row=document.createElement("tr");
-
-row.innerHTML=`
-<td>${formatDate(d.timestamp)}</td>
-<td>$${d.amount.toFixed(2)}</td>
-<td>${d.method||"N/A"}</td>
-<td class="${getStatusClass(d.status)}">${d.status}</td>
-`;
-
-row.onclick=()=>openModal(d);
-
-depositTable.appendChild(row);
-
+    const withdrawRef = ref(db,"withdrawals/"+user.uid);
+    onValue(withdrawRef, snap=>{
+        withdrawContainer.innerHTML = "";
+        if(!snap.exists()){
+            withdrawContainer.innerHTML = `<p class="text-center text-slate-400">No transactions</p>`;
+            return;
+        }
+        Object.values(snap.val()).sort((a,b)=>b.timestamp-a.timestamp)
+        .forEach(tx => withdrawContainer.appendChild(createCard(tx)));
+    });
 });
-
-});
-
-const withdrawRef=ref(db,"withdrawals/"+user.uid);
-onValue(withdrawRef,snapshot=>{
-withdrawTable.innerHTML="";
-
-if(!snapshot.exists()){
-withdrawTable.innerHTML=`<tr><td colspan="4" class="text-center text-slate-400">No transactions</td></tr>`;
-return;
-}
-
-Object.values(snapshot.val())
-.sort((a,b)=>b.timestamp-a.timestamp)
-.forEach(d=>{
-
-const row=document.createElement("tr");
-
-row.innerHTML=`
-<td>${formatDate(d.timestamp)}</td>
-<td>$${d.amount.toFixed(2)}</td>
-<td>${d.method||"N/A"}</td>
-<td class="${getStatusClass(d.status)}">${d.status}</td>
-`;
-
-row.onclick=()=>openModal(d);
-
-withdrawTable.appendChild(row);
-
-});
-
-});
-
-});
-</script>    
-</body>    
+</script>
+</body>
 </html>
