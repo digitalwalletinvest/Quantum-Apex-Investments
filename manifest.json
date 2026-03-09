@@ -1,43 +1,46 @@
 {
   "name": "Quantum Apex Yield",
   "short_name": "QuantumApex",
-  "start_url": "/index.html",
+  "description": "Structured digital investments with algorithmic trading and consistent returns.",
+  "start_url": "./index.html",
   "display": "standalone",
-  "background_color": "#020617",
   "theme_color": "#0f172a",
+  "background_color": "#020617",
+  "orientation": "portrait-primary",
+  "scope": "./",
   "icons": [
     {
-      "src": "https://<your-username>.github.io/<repo-name>/icons/icon-72.png",
+      "src": "https://digitalwalletinvest.github.io/Digital-Wallet-/icons/icon-72.png",
       "sizes": "72x72",
       "type": "image/png"
     },
     {
-      "src": "https://<your-username>.github.io/<repo-name>/icons/icon-96.png",
+      "src": "https://digitalwalletinvest.github.io/Digital-Wallet-/icons/icon-96.png",
       "sizes": "96x96",
       "type": "image/png"
     },
     {
-      "src": "https://<your-username>.github.io/<repo-name>/icons/icon-128.png",
+      "src": "https://digitalwalletinvest.github.io/Digital-Wallet-/icons/icon-128.png",
       "sizes": "128x128",
       "type": "image/png"
     },
     {
-      "src": "https://<your-username>.github.io/<repo-name>/icons/icon-152.png",
+      "src": "https://digitalwalletinvest.github.io/Digital-Wallet-/icons/icon-152.png",
       "sizes": "152x152",
       "type": "image/png"
     },
     {
-      "src": "https://<your-username>.github.io/<repo-name>/icons/icon-192.png",
+      "src": "https://digitalwalletinvest.github.io/Digital-Wallet-/icons/icon-192.png",
       "sizes": "192x192",
       "type": "image/png"
     },
     {
-      "src": "https://<your-username>.github.io/<repo-name>/icons/icon-384.png",
+      "src": "https://digitalwalletinvest.github.io/Digital-Wallet-/icons/icon-384.png",
       "sizes": "384x384",
       "type": "image/png"
     },
     {
-      "src": "https://<your-username>.github.io/<repo-name>/icons/icon-512.png",
+      "src": "https://digitalwalletinvest.github.io/Digital-Wallet-/icons/icon-512.png",
       "sizes": "512x512",
       "type": "image/png"
     }
