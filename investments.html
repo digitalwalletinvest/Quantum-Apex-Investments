@@ -40,8 +40,7 @@ body { font-family: 'Inter', sans-serif; background: #0f172a; }
 
 <section class="bg-slate-800 py-12 px-6 text-center flex-1">
 <h2 class="text-3xl font-bold mb-8">Investment Plans</h2>
-<div id="plansContainer" class="grid sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
-</div>
+<div id="plansContainer" class="grid sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6"></div>
 </section>
 
 <div id="toast" class="toast text-center"></div>
@@ -118,6 +117,7 @@ async function renderPlans(){
     invSnap.forEach(child=>{
       const inv = child.val();
       if(inv.status === "active"){
+        inv.key = child.key; // keep track of investment key
         activeInvestments[inv.planName] = inv;
       }
     });
@@ -154,7 +154,7 @@ async function renderPlans(){
       const inv = activeInvestments[plan.name];
       const maturity = inv.startTime + (plan.durationDays * 86400000);
 
-      const updateCountdown = ()=>{
+      const updateCountdown = async ()=>{
         const remaining = maturity - Date.now();
         if(remaining > 0){
           const days = Math.floor(remaining / 86400000);
@@ -164,11 +164,31 @@ async function renderPlans(){
           cd.innerText = `⏱ ${days}d ${hrs}h ${mins}m ${secs}s remaining`;
         } else {
           cd.innerText = "Investment completed";
+
+          // Auto-complete the investment
+          if(inv.status === "active"){
+            const newMain = (userData.mainBalance || 0) + inv.payout;
+            const newLocked = (userData.lockedBalance || 0) - inv.amount;
+
+            await update(ref(db, "users/" + currentUser.uid), {
+              mainBalance: newMain,
+              lockedBalance: newLocked
+            });
+
+            await update(ref(db, `investments/${currentUser.uid}/${inv.key}`), {
+              status: "completed"
+            });
+
+            btn.classList.remove("active-btn");
+            btn.innerText = "Invest Now";
+            btn.disabled = false;
+            showToast(`Investment ${plan.name} matured! $${inv.payout} added to main balance.`);
+          }
         }
       };
 
       updateCountdown();
-      setInterval(updateCountdown,1000);
+      setInterval(updateCountdown, 1000);
 
     } else {
       btn.addEventListener("click", ()=> invest(plan));
