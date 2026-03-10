@@ -50,7 +50,7 @@
       Invite friends to <strong>Quantum Apex</strong>.<br>
       When they <strong>register using your referral link</strong> and make their
       <strong>first deposit</strong>, you earn
-      <span class="highlight">$3.26 instantly</span>.
+      <span class="highlight">$4 instantly</span>.
     </p>
 
     <div class="ref-box">
@@ -74,7 +74,7 @@
     <div class="info">
       <ul>
         <li>✔ Bonus is credited <strong>only after your referral makes their first deposit</strong></li>
-        <li>✔ One-time $3.26 reward per referred user</li>
+        <li>✔ One-time $4 reward per referred user</li>
         <li>✔ Earnings are updated in real time</li>
         <li>✔ No limits on how many users you can refer</li>
       </ul>
@@ -104,7 +104,7 @@ const toast = document.getElementById("toast");
 function showNotification(msg){
   toast.innerText = msg;
   toast.style.display = "block";
-  setTimeout(()=>{ toast.style.display = "none"; }, 2000);
+  setTimeout(()=>{ toast.style.display = "none"; }, 2500);
 }
 
 onAuthStateChanged(auth, user => {
@@ -112,45 +112,56 @@ onAuthStateChanged(auth, user => {
 
   const userRef = ref(db, "users/" + user.uid);
 
-  // Listen to your own referral data
+  let previousTotal = 0;
+
   onValue(userRef, snap => {
     const data = snap.val() || {};
     document.getElementById("code").innerText = data.referralCode || "—";
     document.getElementById("balance").innerText = data.referralBalance || 0;
   });
 
-  // Listen to referred users
   const referredQuery = query(ref(db,"users"), orderByChild("referredBy"), equalTo(user.uid));
   onValue(referredQuery, snap => {
-    let totalReferral = 0;
+
     const usersContainer = document.getElementById("usersContainer");
     usersContainer.innerHTML = "";
+    let totalReferral = 0;
 
     snap.forEach(uSnap => {
+
       const u = uSnap.val();
       const email = u.email || "Unknown";
       const deposited = u.totalDeposited > 0;
 
       const div = document.createElement("div");
       div.classList.add("referred-user");
+
       div.innerHTML = `
         <span class="user-email">${email}</span>
         <span class="user-status ${deposited ? 'status-deposit':'status-pending'}">
           ${deposited ? 'Deposited' : 'Pending'}
         </span>
       `;
+
       usersContainer.appendChild(div);
 
-      if(deposited) totalReferral += 3.26;
+      if(deposited) totalReferral += 4;
+
     });
 
-    // Update referrer balance immediately when referral deposits
-    update(userRef, { referralBalance: totalReferral });
+    if(totalReferral > previousTotal){
+      showNotification("🎉 A referral deposited! You earned $4");
+    }
+
+    previousTotal = totalReferral;
+
+    update(userRef,{ referralBalance: totalReferral });
     document.getElementById("balance").innerText = totalReferral;
+
   });
+
 });
 
-// Copy referral code
 document.getElementById("copyBtn").addEventListener("click", ()=>{
   const codeText = document.getElementById("code").innerText;
   navigator.clipboard.writeText(codeText).then(()=> showNotification("Referral code copied!"));
