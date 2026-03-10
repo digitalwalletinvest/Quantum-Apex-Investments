@@ -12,19 +12,40 @@
 <style>
 body { margin:0; font-family:Arial,sans-serif; background:#0f172a; color:white; }
 .container { max-width:960px; margin:0 auto; padding:1rem; }
-.card { background:#1e293b; border-radius:16px; padding:2rem; margin-bottom:1.5rem; box-shadow:0 4px 10px rgba(0,0,0,0.3); }
-.section-title { font-size:20px; font-weight:bold; color:#94a3b8; display:flex; align-items:center; gap:0.5rem; }
+.section-title { font-size:24px; font-weight:bold; color:#94a3b8; display:flex; align-items:center; gap:0.5rem; margin-bottom:1rem; }
 .back-btn { position:fixed; top:1rem; right:1rem; background:#ef4444; color:white; padding:0.6rem 1.2rem; border-radius:8px; font-weight:bold; }
 .notification { position:fixed; top:50%; left:50%; transform:translate(-50%,-50%); background:#1e293b; padding:1rem 2rem; border-radius:12px; font-weight:bold; color:#facc15; display:none; z-index:1000; }
 .balance { margin-top:0.5rem; font-weight:bold; color:#f59e0b; }
-.purchase-btn { background:#2563eb; color:white; padding:0.6rem 1.2rem; border-radius:8px; font-weight:bold; }
-.purchase-btn.active { background:#16a34a; cursor:default; }
+
+/* Plan and robot cards */
+.card { background:#1e293b; border-radius:16px; padding:2rem; margin-bottom:1.5rem; box-shadow:0 4px 10px rgba(0,0,0,0.3); }
 .plan-grid { display:grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap:1rem; margin-top:1rem; }
 .plan-card { background:#1e293b; border-radius:16px; padding:1.5rem; }
 .trade-btn { background:#16a34a; color:white; padding:0.8rem; border-radius:8px; font-weight:bold; width:100%; margin-top:0.8rem; }
 .trade-btn.disabled { background:#555; cursor:not-allowed; }
 .trade-btn.active { background:#0ea5e9; }
 .countdown { font-weight:bold; color:#10b981; margin-top:0.5rem; }
+
+/* New professional Robot card */
+.robot-info-card {
+  background: linear-gradient(135deg, #0f766e, #14b8a6);
+  border-radius: 16px;
+  padding: 2rem;
+  margin-bottom: 1.5rem;
+  box-shadow: 0 6px 15px rgba(0,0,0,0.4);
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+.robot-header { display:flex; align-items:center; gap:1rem; }
+.robot-header span { font-size:2rem; }
+.robot-title { font-size:1.5rem; font-weight:bold; color:white; }
+.robot-description { color:#e0f2f1; font-size:0.95rem; line-height:1.5; }
+.robot-price { font-size:1.25rem; font-weight:bold; color:#facc15; }
+.purchase-btn { background:#2563eb; color:white; padding:0.8rem 1.2rem; border-radius:8px; font-weight:bold; cursor:pointer; transition:0.2s; }
+.purchase-btn.active { background:#16a34a; cursor:default; }
+.purchase-btn:hover:not(.active) { background:#1e40af; }
+
 </style>
 </head>
 
@@ -33,11 +54,21 @@ body { margin:0; font-family:Arial,sans-serif; background:#0f172a; color:white; 
 <div class="notification" id="notification"></div>
 
 <div class="container">
-  <div class="section-title"><span style="font-size:2rem;">🤖</span> Quantum Apex Robot</div>
-  <p>The Quantum Apex Robot is an advanced AI trading system that executes automated trades in cryptocurrency, forex, and binary markets. Each investment plan matures over a 3-day cycle, during which the robot continuously analyzes market data and executes trades to optimize returns. Upon completion, the plan provides a 20% profit on the invested amount, offering a fast and automated way for investors to grow their funds within a short period.</p>
-  <p><strong>Price:</strong> $150</p>
-  <p class="balance" id="userBalance">Balance: $0</p>
-  <button id="purchaseRobot" class="purchase-btn">Purchase Robot 🤖</button>
+  <div class="section-title"><span>🤖</span> Quantum Apex Robot</div>
+
+  <!-- Professional Robot Card -->
+  <div class="robot-info-card">
+    <div class="robot-header">
+      <span>🤖</span>
+      <div class="robot-title">Quantum Apex Trading Robot</div>
+    </div>
+    <div class="robot-description">
+      The Quantum Apex Robot is an advanced AI trading system that executes automated trades in cryptocurrency, forex, and binary markets. Each investment plan matures over a 3-day cycle, during which the robot continuously analyzes market data and executes trades to optimize returns. Upon completion, the plan provides a 20% profit on the invested amount, offering a fast and automated way for investors to grow their funds within a short period.
+    </div>
+    <div class="robot-price">Price: $150</div>
+    <div class="balance" id="userBalance">Balance: $0</div>
+    <button id="purchaseRobot" class="purchase-btn">Purchase Robot 🤖</button>
+  </div>
 
   <div id="plansContainer" class="plan-grid"></div>
 </div>
@@ -108,8 +139,6 @@ onAuthStateChanged(auth, async user => {
   }
 
   plansContainer.innerHTML = "";
-
-  // Display plans
   plans.forEach(plan=>{
     const div=document.createElement("div");
     div.className="plan-card";
@@ -123,7 +152,6 @@ onAuthStateChanged(auth, async user => {
     plansContainer.appendChild(div);
   });
 
-  // Process payouts
   const payoutsSnap = await get(payoutsRef);
   const activePairs = {};
 
@@ -132,9 +160,8 @@ onAuthStateChanged(auth, async user => {
       const btn = document.getElementById(`btn-${p.pair}`);
       const cdEl = document.getElementById(`cd-${p.pair}`);
 
-      // Automatically credit main balance if matured
       if(!p.claimed && Date.now() >= p.maturity){
-        await update(userRef, {
+        await update(userRef,{
           mainBalance: mainBalance + p.amount,
           lockedBalance: lockedBalance - p.amount
         });
@@ -150,7 +177,6 @@ onAuthStateChanged(auth, async user => {
           btn.classList.add("active");
           btn.innerText = "Trade is ongoing";
 
-          // Start countdown
           const updateCountdown = () => {
             const remaining = p.maturity - Date.now();
             if(remaining > 0){
@@ -172,7 +198,6 @@ onAuthStateChanged(auth, async user => {
     }
   }
 
-  // Trade button actions
   plans.forEach(plan=>{
     const btn=document.getElementById(`btn-${plan.pair}`);
     if(!btn) return;
@@ -208,7 +233,6 @@ onAuthStateChanged(auth, async user => {
     };
   });
 
-  // Robot purchase
   purchaseBtn.onclick=async()=>{
     if(robotPurchased) return;
     if(mainBalance <150) return notify("Insufficient balance");
@@ -224,4 +248,4 @@ onAuthStateChanged(auth, async user => {
 });
 </script>
 </body>
-</html>
+  </html>
