@@ -12,13 +12,14 @@
 <style>
 body { margin:0; font-family:Arial,sans-serif; background:#0f172a; color:white; }
 .container { max-width:960px; margin:0 auto; padding:1rem; }
-.section-title { font-size:24px; font-weight:bold; color:#94a3b8; display:flex; align-items:center; gap:0.5rem; margin-bottom:1rem; }
+
+.card { background:#1e293b; border-radius:16px; padding:2rem; margin-bottom:1.5rem; box-shadow:0 4px 10px rgba(0,0,0,0.3); }
+.section-title { font-size:20px; font-weight:bold; color:#94a3b8; display:flex; align-items:center; gap:0.5rem; }
 .back-btn { position:fixed; top:1rem; right:1rem; background:#ef4444; color:white; padding:0.6rem 1.2rem; border-radius:8px; font-weight:bold; }
 .notification { position:fixed; top:50%; left:50%; transform:translate(-50%,-50%); background:#1e293b; padding:1rem 2rem; border-radius:12px; font-weight:bold; color:#facc15; display:none; z-index:1000; }
 .balance { margin-top:0.5rem; font-weight:bold; color:#f59e0b; }
-
-/* Plan and robot cards */
-.card { background:#1e293b; border-radius:16px; padding:2rem; margin-bottom:1.5rem; box-shadow:0 4px 10px rgba(0,0,0,0.3); }
+.purchase-btn { background:#2563eb; color:white; padding:0.6rem 1.2rem; border-radius:8px; font-weight:bold; }
+.purchase-btn.active { background:#16a34a; cursor:default; }
 .plan-grid { display:grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap:1rem; margin-top:1rem; }
 .plan-card { background:#1e293b; border-radius:16px; padding:1.5rem; }
 .trade-btn { background:#16a34a; color:white; padding:0.8rem; border-radius:8px; font-weight:bold; width:100%; margin-top:0.8rem; }
@@ -26,26 +27,51 @@ body { margin:0; font-family:Arial,sans-serif; background:#0f172a; color:white; 
 .trade-btn.active { background:#0ea5e9; }
 .countdown { font-weight:bold; color:#10b981; margin-top:0.5rem; }
 
-/* New professional Robot card */
-.robot-info-card {
+/* Compact professional robot card with icon */
+.robot-card {
   background: linear-gradient(135deg, #0f766e, #14b8a6);
-  border-radius: 16px;
-  padding: 2rem;
-  margin-bottom: 1.5rem;
-  box-shadow: 0 6px 15px rgba(0,0,0,0.4);
-  display: flex;
-  flex-direction: column;
-  gap: 1rem;
+  border-radius:16px;
+  padding:1rem 1.5rem;
+  display:flex;
+  justify-content:space-between;
+  align-items:center;
+  height:4cm; /* compact height */
+  box-shadow:0 4px 10px rgba(0,0,0,0.4);
+  color:white;
+  gap:1rem;
 }
-.robot-header { display:flex; align-items:center; gap:1rem; }
-.robot-header span { font-size:2rem; }
-.robot-title { font-size:1.5rem; font-weight:bold; color:white; }
-.robot-description { color:#e0f2f1; font-size:0.95rem; line-height:1.5; }
-.robot-price { font-size:1.25rem; font-weight:bold; color:#facc15; }
-.purchase-btn { background:#2563eb; color:white; padding:0.8rem 1.2rem; border-radius:8px; font-weight:bold; cursor:pointer; transition:0.2s; }
-.purchase-btn.active { background:#16a34a; cursor:default; }
-.purchase-btn:hover:not(.active) { background:#1e40af; }
+.robot-info {
+  display:flex;
+  flex-direction:column;
+  justify-content:center;
+  gap:0.3rem;
+}
+.robot-info p { margin:0; }
+.robot-price { font-weight:bold; color:#facc15; }
+.robot-desc { font-size:0.85rem; color:#d1d5db; }
+.robot-button {
+  background:white; color:#0f172a; border:none; padding:0.6rem 1rem; border-radius:8px; font-weight:bold; cursor:pointer;
+  transition: background 0.3s;
+}
+.robot-button:hover { background:#e2e8f0; }
 
+/* Robot icon */
+.robot-icon {
+  width:60px;
+  height:60px;
+  flex-shrink:0;
+  background:#e2e8f0;
+  border-radius:50%;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  font-size:2rem;
+  transition: transform 0.3s;
+  color:#0f172a;
+}
+.robot-card:hover .robot-icon {
+  transform: rotate(15deg) scale(1.1);
+}
 </style>
 </head>
 
@@ -54,22 +80,20 @@ body { margin:0; font-family:Arial,sans-serif; background:#0f172a; color:white; 
 <div class="notification" id="notification"></div>
 
 <div class="container">
-  <div class="section-title"><span>🤖</span> Quantum Apex Robot</div>
+  <div class="section-title"><span style="font-size:2rem;">🤖</span> Quantum Apex Robot</div>
 
-  <!-- Professional Robot Card -->
-  <div class="robot-info-card">
-    <div class="robot-header">
-      <span>🤖</span>
-      <div class="robot-title">Quantum Apex Trading Robot</div>
+  <!-- Compact professional robot card with icon -->
+  <div class="robot-card">
+    <div class="robot-icon">🤖</div>
+    <div class="robot-info">
+      <p class="robot-title">Quantum Apex Robot</p>
+      <p class="robot-price">Price: $150</p>
+      <p class="robot-desc">Advanced AI trading for crypto, forex & binary markets. Potential ROI up to 20% in 3 days.</p>
     </div>
-    <div class="robot-description">
-      The Quantum Apex Robot is an advanced AI trading system that executes automated trades in cryptocurrency, forex, and binary markets. Each investment plan matures over a 3-day cycle, during which the robot continuously analyzes market data and executes trades to optimize returns. Upon completion, the plan provides a 20% profit on the invested amount, offering a fast and automated way for investors to grow their funds within a short period.
-    </div>
-    <div class="robot-price">Price: $150</div>
-    <div class="balance" id="userBalance">Balance: $0</div>
-    <button id="purchaseRobot" class="purchase-btn">Purchase Robot 🤖</button>
+    <button id="purchaseRobot" class="robot-button">Purchase Robot 🤖</button>
   </div>
 
+  <p class="balance" id="userBalance">Balance: $0</p>
   <div id="plansContainer" class="plan-grid"></div>
 </div>
 
@@ -139,6 +163,7 @@ onAuthStateChanged(auth, async user => {
   }
 
   plansContainer.innerHTML = "";
+
   plans.forEach(plan=>{
     const div=document.createElement("div");
     div.className="plan-card";
@@ -161,7 +186,7 @@ onAuthStateChanged(auth, async user => {
       const cdEl = document.getElementById(`cd-${p.pair}`);
 
       if(!p.claimed && Date.now() >= p.maturity){
-        await update(userRef,{
+        await update(userRef, {
           mainBalance: mainBalance + p.amount,
           lockedBalance: lockedBalance - p.amount
         });
@@ -248,4 +273,4 @@ onAuthStateChanged(auth, async user => {
 });
 </script>
 </body>
-  </html>
+</html>
