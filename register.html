@@ -12,8 +12,9 @@
 <style>
 body{ font-family:Inter,system-ui,sans-serif; background:radial-gradient(circle at top,#1e293b,#020617); }
 .card{ background:linear-gradient(180deg,#020617,#020617cc); border:1px solid #1f2937; border-radius:18px; box-shadow:0 20px 40px rgba(0,0,0,.65), inset 0 1px 0 rgba(255,255,255,.03); }
-input,select{ background:#020617; border:1px solid #334155; color:#f9fafb; }
-input:focus,select:focus{ outline:none; border-color:#10b981; box-shadow:0 0 0 2px rgba(16,185,129,.15); }
+input{ background:#020617; border:1px solid #334155; color:#f9fafb; }
+input:focus{ outline:none; border-color:#10b981; box-shadow:0 0 0 2px rgba(16,185,129,.15); }
+.phone-hint{ font-size:10px; color:#94a3b8; margin-top:2px; }
 .toast{ position:fixed; top:50%; left:50%; transform:translate(-50%,-50%); background:#020617; padding:12px 26px; border-radius:14px; box-shadow:0 18px 36px rgba(0,0,0,.7); display:none; font-weight:700; z-index:1000; text-align:center; }
 </style>
 </head>
@@ -22,7 +23,7 @@ input:focus,select:focus{ outline:none; border-color:#10b981; box-shadow:0 0 0 2
 <div class="card w-full max-w-sm p-5">
   <div class="text-center mb-4">
     <h1 class="text-xl font-extrabold text-emerald-400">Create Account</h1>
-    <p class="text-gray-400 text-xs mt-0.5">Join Quantum Apex and earn up to 40% profit</p>
+    <p class="text-gray-400 text-xs mt-0.5">Join Quantum Apex and earn up to 20% profit</p>
   </div>
   <div class="space-y-2.5">
     <div>
@@ -36,17 +37,7 @@ input:focus,select:focus{ outline:none; border-color:#10b981; box-shadow:0 0 0 2
     <div>
       <label class="block text-[10px] uppercase text-gray-400 mb-0.5">Phone Number</label>
       <input id="phone" class="w-full h-9 px-3 rounded-md" placeholder="+254...">
-    </div>
-    <div>
-      <label class="block text-[10px] uppercase text-gray-400 mb-0.5">Country</label>
-      <select id="country" class="w-full h-9 px-3 rounded-md">
-        <option value="">Select Country</option>
-        <option>Kenya</option><option>Uganda</option><option>Tanzania</option>
-        <option>Rwanda</option><option>Zambia</option><option>Zimbabwe</option>
-        <option>Botswana</option><option>South Africa</option><option>Mozambique</option>
-        <option>Ethiopia</option><option>South Sudan</option><option>Nigeria</option>
-        <option>France</option><option>United Kingdom</option>
-      </select>
+      <div class="phone-hint">Include your country code (e.g., +254)</div>
     </div>
     <div>
       <label class="block text-[10px] uppercase text-gray-400 mb-0.5">Password</label>
@@ -96,7 +87,6 @@ const registerBtn = document.getElementById("registerBtn");
 const nameInput = document.getElementById("name");
 const emailInput = document.getElementById("email");
 const phoneInput = document.getElementById("phone");
-const countrySelect = document.getElementById("country");
 const passwordInput = document.getElementById("password");
 const confirmPasswordInput = document.getElementById("confirmPassword");
 const referralInput = document.getElementById("referral");
@@ -117,13 +107,18 @@ registerBtn.onclick = async () => {
   const name = nameInput.value.trim();
   const email = emailInput.value.trim();
   const phone = phoneInput.value.trim();
-  const country = countrySelect.value;
   const pass = passwordInput.value;
   const pass2 = confirmPasswordInput.value;
   const refCode = referralInput.value.trim().toUpperCase();
 
-  if(!name||!email||!phone||!country||!pass||!pass2){ showToast("Please complete all required fields",false); return; }
+  if(!name||!email||!phone||!pass||!pass2){ showToast("Please complete all required fields",false); return; }
   if(pass!==pass2){ showToast("Passwords do not match",false); return; }
+
+  // Validate phone starts with + followed by digits
+  if(!/^\+\d{6,15}$/.test(phone)){
+    showToast("Phone number must start with + and include country code", false);
+    return;
+  }
 
   try{
     const cred = await createUserWithEmailAndPassword(auth,email,pass);
@@ -135,16 +130,16 @@ registerBtn.onclick = async () => {
     if(refCode){
       const refSnap = await get(ref(db,"users/referralCodes/"+refCode));
       if(refSnap.exists()){
-        referredBy = refSnap.val(); // uid of the referring user
+        referredBy = refSnap.val();
       } else {
         showToast("Referral code invalid", false);
         return;
       }
     }
 
-    // Save new user
+    // Save new user (no country field)
     await set(ref(db,"users/"+uid),{
-      uid,name,email,phone,country,
+      uid,name,email,phone,
       mainBalance:0,lockedBalance:0,referralBalance:0,
       totalDeposited:0,totalProfit:0,totalWithdrawn:0,
       referralCode: myCode,
@@ -156,7 +151,7 @@ registerBtn.onclick = async () => {
     // Add referral code mapping for public lookup
     await set(ref(db,"users/referralCodes/"+myCode), uid);
 
-    // Optional: credit referral instantly (can be removed if only on deposit)
+    // Optional: credit referral instantly
     if(referredBy){
       const refUserRef = ref(db,"users/"+referredBy);
       const refUserSnap = await get(refUserRef);
@@ -180,4 +175,4 @@ registerBtn.onclick = async () => {
 };
 </script>
 </body>
-  </html>
+</html>
