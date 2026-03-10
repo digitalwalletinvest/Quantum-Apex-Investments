@@ -1,78 +1,78 @@
-<!DOCTYPE html>  
-<html lang="en">  
-<head>  
-<meta charset="UTF-8" />  
-<meta name="viewport" content="width=device-width, initial-scale=1.0" />  
-<title>Dashboard - Quantum Apex</title>  
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Dashboard - Quantum Apex</title>
 
-<script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js"></script>  
-<script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js"></script>  
-<script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-database.js"></script>  
-<script src="https://cdn.tailwindcss.com"></script>  
+<script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-database.js"></script>
+<script src="https://cdn.tailwindcss.com"></script>
 
-<style>  
-body { background:#0f172a; font-family:Inter,sans-serif; }  
+<style>
+body { background:#0f172a; font-family:Inter,sans-serif; }
 
 .card {   
   border-radius:14px;   
   transition: transform 0.2s, box-shadow 0.2s;  
-}  
-.card:hover { transform: translateY(-2px); box-shadow: 0 8px 20px rgba(0,0,0,0.5); }  
+}
+.card:hover { transform: translateY(-2px); box-shadow: 0 8px 20px rgba(0,0,0,0.5); }
 
-.section-title{  
-  font-size:14px;  
-  font-weight:600;  
-  color:#94a3b8;  
-  padding:10px 12px;  
-  background:#020617;  
-  border-top-left-radius:14px;  
-  border-top-right-radius:14px;  
-}  
+.section-title{
+  font-size:14px;
+  font-weight:600;
+  color:#94a3b8;
+  padding:10px 12px;
+  background:#020617;
+  border-top-left-radius:14px;
+  border-top-right-radius:14px;
+}
 
-.menu{  
-  display:none;  
-  position:absolute;  
-  background:#1e293b;  
-  border-radius:12px;  
-  padding:10px;  
-  z-index:100;  
-}  
+.menu{
+  display:none;
+  position:absolute;
+  background:#1e293b;
+  border-radius:12px;
+  padding:10px;
+  z-index:100;
+}
 
-.menu button{  
-  width:100%;  
-  text-align:center;  
-  padding:10px;  
-  border-radius:8px;  
-  background:#334155;  
-  font-weight:600;  
-  color:white;  
-  margin-bottom:6px;  
-  transition: background 0.2s;  
-  display:flex;  
-  align-items:center;  
-  justify-content:center;  
+.menu button{
+  width:100%;
+  text-align:center;
+  padding:10px;
+  border-radius:8px;
+  background:#334155;
+  font-weight:600;
+  color:white;
+  margin-bottom:6px;
+  transition: background 0.2s;
+  display:flex;
+  align-items:center;
+  justify-content:center;
   gap:6px;
-}  
-.menu button:hover{ background:#3b82f6; }  
+}
+.menu button:hover{ background:#3b82f6; }
 
-.hamburger div{  
-  width:25px;height:3px;background:white;margin:4px 0;border-radius:2px;  
-}  
+.hamburger div{
+  width:25px;height:3px;background:white;margin:4px 0;border-radius:2px;
+}
 
-.card-button {  
-  padding: 10px 18px;  
-  border-radius: 10px;  
-  font-weight:600;  
-  transition: background 0.3s, transform 0.2s;  
-  margin-top:10px;  
-  display:inline-block;  
-}  
-.card-button:hover { transform: translateY(-2px); }  
+.card-button {
+  padding: 10px 18px;
+  border-radius: 10px;
+  font-weight:600;
+  transition: background 0.3s, transform 0.2s;
+  margin-top:10px;
+  display:inline-block;
+}
+.card-button:hover { transform: translateY(-2px); }
 
-.robot-card { background: linear-gradient(135deg, #0f766e, #14b8a6); }  
-.trade-card { background: linear-gradient(135deg, #1d4ed8, #3b82f6); }  
-.invest-card { background: linear-gradient(135deg, #15803d, #22c55e); }  
-.company-card { background: linear-gradient(135deg, #b45309, #f59e0b); }  
+.robot-card { background: linear-gradient(135deg, #0f766e, #14b8a6); }
+.trade-card { background: linear-gradient(135deg, #1d4ed8, #3b82f6); }
+.invest-card { background: linear-gradient(135deg, #15803d, #22c55e); }
+.company-card { background: linear-gradient(135deg, #b45309, #f59e0b); }
 
 /* Floating animation */
 @keyframes float {
@@ -83,163 +83,163 @@ body { background:#0f172a; font-family:Inter,sans-serif; }
 
 /* WhatsApp floating button */  
 #whatsappBtn {  
-  position: fixed;  
-  bottom: 2cm;  
-  right: 1rem;  
-  z-index: 999;  
-  width: 60px;  
-  height: 60px;  
-  border-radius: 50%;  
-  background-color: #25D366;  
-  display: flex;  
-  align-items: center;  
-  justify-content: center;  
-  box-shadow: 0 4px 12px rgba(0,0,0,0.3);  
-  cursor: pointer;  
+  position: fixed;
+  bottom: 2cm;
+  right: 1rem;
+  z-index: 999;
+  width: 60px;
+  height: 60px;
+  border-radius: 50%;
+  background-color: #25D366;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 4px 12px rgba(0,0,0,0.3);
+  cursor: pointer;
   animation: float 3s ease-in-out infinite;
-  transition: transform 0.2s;  
-}  
-#whatsappBtn:hover { transform: scale(1.12); }  
-#whatsappBtn img { width: 32px; height: 32px; }  
+  transition: transform 0.2s;
+}
+#whatsappBtn:hover { transform: scale(1.12); }
+#whatsappBtn img { width: 32px; height: 32px; }
 
 /* Telegram floating button */  
-#telegramBtn {  
-  position: fixed;  
-  bottom: 4.4cm;  
-  right: 1rem;  
-  z-index: 999;  
-  width: 60px;  
-  height: 60px;  
-  border-radius: 50%;  
-  background-color: #229ED9;  
-  display: flex;  
-  align-items: center;  
-  justify-content: center;  
-  box-shadow: 0 4px 12px rgba(0,0,0,0.3);  
-  cursor: pointer;  
+#telegramBtn {
+  position: fixed;
+  bottom: 4.4cm;
+  right: 1rem;
+  z-index: 999;
+  width: 60px;
+  height: 60px;
+  border-radius: 50%;
+  background-color: #229ED9;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 4px 12px rgba(0,0,0,0.3);
+  cursor: pointer;
   animation: float 3s ease-in-out infinite;
-  transition: transform 0.2s;  
-}  
-#telegramBtn:hover { transform: scale(1.12); }  
-#telegramBtn img { width: 32px; height: 32px; }  
+  transition: transform 0.2s;
+}
+#telegramBtn:hover { transform: scale(1.12); }
+#telegramBtn img { width: 32px; height: 32px; }
 
-</style>  
-</head>  
+</style>
+</head>
 
-<body class="text-white min-h-screen">  
+<body class="text-white min-h-screen">
 
-<nav class="flex justify-between items-center px-6 py-4 bg-slate-900 relative">  
-  <div class="flex items-center gap-4">  
-    <div id="hamburger" class="cursor-pointer">  
-      <div class="hamburger"><div></div><div></div><div></div></div>  
-    </div>  
-    <span class="text-xl font-bold text-emerald-400">Quantum Apex</span>  
-  </div>  
-  <div class="flex items-center gap-2">  
-    <div id="menu" class="menu left-6 top-16 w-56">  
-      <button onclick="location.href='profile.html'">Profile</button>  
-      <button onclick="location.href='dashboard.html'">Dashboard</button>  
-      <button onclick="location.href='deposit.html'">Deposit</button>  
-      <button onclick="location.href='withdraw.html'">Withdraw</button>  
-      <button onclick="location.href='transaction.html'">Transaction History</button>  
-      <button onclick="location.href='investments.html'">Invest Now</button>  
-      <button onclick="location.href='investment.html'">My Investments</button>  
-      <button onclick="location.href='earn.html'">How to Earn Fast</button>  
-      <button onclick="location.href='referral.html'">Refer and Earn</button>  
-      <!-- APK Download Button -->  
+<nav class="flex justify-between items-center px-6 py-4 bg-slate-900 relative">
+  <div class="flex items-center gap-4">
+    <div id="hamburger" class="cursor-pointer">
+      <div class="hamburger"><div></div><div></div><div></div></div>
+    </div>
+    <span class="text-xl font-bold text-emerald-400">Quantum Apex</span>
+  </div>
+  <div class="flex items-center gap-2">
+    <div id="menu" class="menu left-6 top-16 w-56">
+      <button onclick="location.href='profile.html'">Profile</button>
+      <button onclick="location.href='dashboard.html'">Dashboard</button>
+      <button onclick="location.href='deposit.html'">Deposit</button>
+      <button onclick="location.href='withdraw.html'">Withdraw</button>
+      <button onclick="location.href='transaction.html'">Transaction History</button>
+      <button onclick="location.href='investments.html'">Invest Now</button>
+      <button onclick="location.href='investment.html'">My Investments</button>
+      <button onclick="location.href='earn.html'">How to Earn Fast</button>
+      <button onclick="location.href='referral.html'">Refer and Earn</button>
+      <!-- APK Download Button -->
       <button onclick="window.open('https://digitalwalletinvest.github.io/Quantum-Apex-Investments/QuantumApex.apk','_blank')">
-        <img src="https://upload.wikimedia.org/wikipedia/commons/3/3e/Android_logo_2019.png" class="w-5 h-5">  
+        <img src="https://upload.wikimedia.org/wikipedia/commons/3/3e/Android_logo_2019.png" class="w-5 h-5">
         Download App (APK)
       </button>
-    </div>  
-  </div>  
-</nav>  
+    </div>
+  </div>
+</nav>
 
-<section class="p-4 space-y-6">  
+<section class="p-4 space-y-6">
 
-<div class="grid grid-cols-2 gap-4">  
-  <div class="card p-4 text-center bg-gradient-to-br from-teal-800 to-teal-600">  
-    <p class="text-slate-200">Main Balance</p>  
-    <p id="mainBalance" class="text-2xl text-emerald-400">$0.00</p>  
-  </div>  
-  <div class="card p-4 text-center bg-gradient-to-br from-yellow-800 to-yellow-600">  
-    <p class="text-slate-200">Locked Balance</p>  
-    <p id="lockedBalance" class="text-2xl text-yellow-400">$0.00</p>  
-  </div>  
-</div>  
+<div class="grid grid-cols-2 gap-4">
+  <div class="card p-4 text-center bg-gradient-to-br from-teal-800 to-teal-600">
+    <p class="text-slate-200">Main Balance</p>
+    <p id="mainBalance" class="text-2xl text-emerald-400">$0.00</p>
+  </div>
+  <div class="card p-4 text-center bg-gradient-to-br from-yellow-800 to-yellow-600">
+    <p class="text-slate-200">Locked Balance</p>
+    <p id="lockedBalance" class="text-2xl text-yellow-400">$0.00</p>
+  </div>
+</div>
 
-<div class="card overflow-hidden robot-card p-4">  
-  <p class="text-lg font-semibold">🤖 Quantum Apex Robot</p>  
-  <p class="text-sm mt-2">  
-    Price: <strong>$150</strong> · The Quantum Apex Robot is an AI-powered trading system for Bitcoin, Forex, and Binary markets. Automated trades with potential ROI <strong>Up to 200% in 7 days</strong>.  
-  </p>  
-  <button onclick="location.href='earn.html'" class="card-button bg-white text-black">Activate Robot</button>  
-</div>  
+<div class="card overflow-hidden robot-card p-4">
+  <p class="text-lg font-semibold">🤖 Quantum Apex Robot</p>
+  <p class="text-sm mt-2">
+    Price: <strong>$150</strong> · The Quantum Apex Robot is an AI-powered trading system for Bitcoin, Forex, and Binary markets. Automated trades with potential ROI <strong>Up to 200% in 7 days</strong>.
+  </p>
+  <button onclick="location.href='earn.html'" class="card-button bg-white text-black">Activate Robot</button>
+</div>
 
-<div class="card trade-card p-4">  
-  <p class="text-lg font-semibold text-white">Trade Now</p>  
-  <p class="text-sm mt-2 text-slate-200">  
-    Use the Quantum Apex Robot to trade automatically and earn profits in as little as three days. Fast, intelligent, and fully automated.  
-  </p>  
-  <button onclick="location.href='earn.html'" class="card-button bg-white text-black">Trade Now</button>  
-</div>  
+<div class="card trade-card p-4">
+  <p class="text-lg font-semibold text-white">Trade Now</p>
+  <p class="text-sm mt-2 text-slate-200">
+    Use the Quantum Apex Robot to trade automatically and earn profits in as little as three days. Fast, intelligent, and fully automated.
+  </p>
+  <button onclick="location.href='earn.html'" class="card-button bg-white text-black">Trade Now</button>
+</div>
 
-<div class="card invest-card p-4">  
-  <p class="text-lg font-semibold text-white">Invest Now</p>  
-  <p class="text-sm mt-2 text-slate-200">  
-    Invest your funds and watch them grow in 7 days. Affordable and predictable profits for a week-long investment cycle.  
-  </p>  
-  <button onclick="location.href='investments.html'" class="card-button bg-white text-black">Invest Now</button>  
-</div>  
+<div class="card invest-card p-4">
+  <p class="text-lg font-semibold text-white">Invest Now</p>
+  <p class="text-sm mt-2 text-slate-200">
+    Invest your funds and watch them grow in 7 days. Affordable and predictable profits for a week-long investment cycle.
+  </p>
+  <button onclick="location.href='investments.html'" class="card-button bg-white text-black">Invest Now</button>
+</div>
 
-<div class="card company-card p-4">  
-  <p class="text-lg font-semibold text-white">About Quantum Apex</p>  
-  <p class="text-sm mt-2 text-slate-200">  
-    Quantum Apex is a cutting-edge AI investment platform for crypto, forex, and futures markets. Safe, fast, and designed for high returns while keeping it simple.  
-  </p>  
-</div>  
+<div class="card company-card p-4">
+  <p class="text-lg font-semibold text-white">About Quantum Apex</p>
+  <p class="text-sm mt-2 text-slate-200">
+    Quantum Apex is a cutting-edge AI investment platform for crypto, forex, and futures markets. Safe, fast, and designed for high returns while keeping it simple.
+  </p>
+</div>
 
-</section>  
+</section>
 
-<!-- Telegram Floating Icon -->  
-<a id="telegramBtn" href="https://t.me/+tX76czxHZo1hMDk8" target="_blank">  
-<img src="https://upload.wikimedia.org/wikipedia/commons/8/82/Telegram_logo.svg">  
-</a>  
+<!-- Telegram Floating Icon -->
+<a id="telegramBtn" href="https://t.me/+tX76czxHZo1hMDk8" target="_blank">
+<img src="https://upload.wikimedia.org/wikipedia/commons/8/82/Telegram_logo.svg">
+</a>
 
-<!-- WhatsApp Floating Icon -->  
-<a id="whatsappBtn" href="https://wa.me/254732364593" target="_blank" title="Chat with Support">  
-<img src="https://upload.wikimedia.org/wikipedia/commons/6/6b/WhatsApp.svg">  
-</a>  
+<!-- WhatsApp Floating Icon -->
+<a id="whatsappBtn" href="https://wa.me/254732364593" target="_blank" title="Chat with Support">
+<img src="https://upload.wikimedia.org/wikipedia/commons/6/6b/WhatsApp.svg">
+</a>
 
-<script type="module">  
-import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";  
-import { getAuth, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js";  
-import { getDatabase, ref, onValue } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-database.js";  
+<script type="module">
+import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
+import { getAuth, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js";
+import { getDatabase, ref, onValue } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-database.js";
 
-const app = initializeApp({  
-apiKey:"AIzaSyDaEphuY2kQue8m-20DDs68JDgQirAycBE",  
-authDomain:"digital-wallet-40297.firebaseapp.com",  
-databaseURL:"https://digital-wallet-40297-default-rtdb.europe-west1.firebasedatabase.app",  
-projectId:"digital-wallet-40297"  
-});  
+const app = initializeApp({
+apiKey:"AIzaSyDaEphuY2kQue8m-20DDs68JDgQirAycBE",
+authDomain:"digital-wallet-40297.firebaseapp.com",
+databaseURL:"https://digital-wallet-40297-default-rtdb.europe-west1.firebasedatabase.app",
+projectId:"digital-wallet-40297"
+});
 
-const auth = getAuth(app);  
-const db = getDatabase(app);  
+const auth = getAuth(app);
+const db = getDatabase(app);
 
-const hamburger = document.getElementById("hamburger");  
-const menu = document.getElementById("menu");  
-hamburger.onclick = (e) => { menu.style.display = menu.style.display==="block"?"none":"block"; e.stopPropagation(); };  
-document.addEventListener("click", () => { menu.style.display = "none"; });  
+const hamburger = document.getElementById("hamburger");
+const menu = document.getElementById("menu");
+hamburger.onclick = (e) => { menu.style.display = menu.style.display==="block"?"none":"block"; e.stopPropagation(); };
+document.addEventListener("click", () => { menu.style.display = "none"; });
 
-onAuthStateChanged(auth,user=>{  
-if(!user) location.href="login.html";  
-onValue(ref(db,"users/"+user.uid),snap=>{  
-if(!snap.exists()) return;  
-const d=snap.val();  
-mainBalance.innerText=`$${(d.mainBalance||0).toFixed(2)}`;  
-lockedBalance.innerText=`$${(d.lockedBalance||0).toFixed(2)}`;  
-});  
-});  
-</script>  
-</body>  
-  </html>
+onAuthStateChanged(auth,user=>{
+if(!user) location.href="login.html";
+onValue(ref(db,"users/"+user.uid),snap=>{
+if(!snap.exists()) return;
+const d=snap.val();
+mainBalance.innerText=`$${(d.mainBalance||0).toFixed(2)}`;
+lockedBalance.innerText=`$${(d.lockedBalance||0).toFixed(2)}`;
+});
+});
+</script>
+</body>
+</html>
