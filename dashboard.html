@@ -192,6 +192,7 @@ body { background:#0f172a; font-family:Inter,sans-serif; }
   <p class="text-sm mt-2 text-slate-200">
     Quantum Apex is a cutting-edge AI investment platform for crypto, forex, and futures markets. Safe, fast, and designed for high returns while keeping it simple.
   </p>
+  <button onclick="location.href='earn.html'" class="card-button bg-white text-black mt-2">How to Earn Fast</button>
 </div>
 
 </section>
@@ -227,14 +228,14 @@ hamburger.onclick = (e) => { menu.style.display = menu.style.display==="block"?"
 document.addEventListener("click", () => { menu.style.display = "none"; });
 
 onAuthStateChanged(auth,user=>{
-if(!user) location.href="login.html";
-onValue(ref(db,"users/"+user.uid),snap=>{
-if(!snap.exists()) return;
-const d=snap.val();
-mainBalance.innerText=`$${(d.mainBalance||0).toFixed(2)}`;
-lockedBalance.innerText=`$${(d.lockedBalance||0).toFixed(2)}`;
-});
+  if(!user) location.href="login.html";
+  onValue(ref(db,"users/"+user.uid),snap=>{
+    if(!snap.exists()) return;
+    const d=snap.val();
+    mainBalance.innerText=`$${(d.mainBalance||0).toFixed(2)}`;
+    lockedBalance.innerText=`$${(d.lockedBalance||0).toFixed(2)}`;
+  });
 });
 </script>
 </body>
-</html>
+  </html>
