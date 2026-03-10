@@ -34,10 +34,10 @@ body { margin:0; font-family:Arial,sans-serif; background:#0f172a; color:white; 
 
 <div class="container">
   <div class="section-title"><span style="font-size:2rem;">🤖</span> Quantum Apex Robot</div>
-<p>The Quantum Apex Robot is an advanced AI trading system that executes automated trades in cryptocurrency, forex, and binary markets. Each investment plan matures over a 3-day cycle, during which the robot continuously analyzes market data and executes trades to optimize returns. Upon completion, the plan provides a 20% profit on the invested amount, offering a fast and automated way for investors to grow their funds within a short period.</p>
-<p><strong>Price:</strong> $150</p>
-<p class="balance" id="userBalance">Balance: $0</p>
-<button id="purchaseRobot" class="purchase-btn">Purchase Robot 🤖</button>
+  <p>The Quantum Apex Robot is an advanced AI trading system that executes automated trades in cryptocurrency, forex, and binary markets. Each investment plan matures over a 3-day cycle, during which the robot continuously analyzes market data and executes trades to optimize returns. Upon completion, the plan provides a 20% profit on the invested amount, offering a fast and automated way for investors to grow their funds within a short period.</p>
+  <p><strong>Price:</strong> $150</p>
+  <p class="balance" id="userBalance">Balance: $0</p>
+  <button id="purchaseRobot" class="purchase-btn">Purchase Robot 🤖</button>
 
   <div id="plansContainer" class="plan-grid"></div>
 </div>
@@ -89,15 +89,14 @@ onAuthStateChanged(auth, async user => {
   const payoutsRef = ref(db,"payouts/"+user.uid);
 
   const userSnap = await get(userRef);
-
   if(!userSnap.exists()){
     notify("User record not found.");
     return;
   }
 
-  const userData = userSnap.val() || {};
-  const mainBalance = userData.mainBalance || 0;
-  const lockedBalance = userData.lockedBalance || 0;
+  let userData = userSnap.val() || {};
+  let mainBalance = userData.mainBalance || 0;
+  let lockedBalance = userData.lockedBalance || 0;
   const robotPurchased = !!userData.robotPurchased;
 
   userBalanceEl.innerText = `Balance: $${mainBalance} | Locked: $${lockedBalance}`;
@@ -110,6 +109,7 @@ onAuthStateChanged(auth, async user => {
 
   plansContainer.innerHTML = "";
 
+  // Display plans
   plans.forEach(plan=>{
     const div=document.createElement("div");
     div.className="plan-card";
@@ -123,19 +123,34 @@ onAuthStateChanged(auth, async user => {
     plansContainer.appendChild(div);
   });
 
+  // Process payouts
   const payoutsSnap = await get(payoutsRef);
   const activePairs = {};
 
   if(payoutsSnap.exists()){
-    Object.entries(payoutsSnap.val()).forEach(([id,p])=>{
+    for(const [id, p] of Object.entries(payoutsSnap.val())){
+      const btn = document.getElementById(`btn-${p.pair}`);
+      const cdEl = document.getElementById(`cd-${p.pair}`);
+
+      // Automatically credit main balance if matured
+      if(!p.claimed && Date.now() >= p.maturity){
+        await update(userRef, {
+          mainBalance: mainBalance + p.amount,
+          lockedBalance: lockedBalance - p.amount
+        });
+        await update(ref(payoutsRef, id), { claimed: true });
+        mainBalance += p.amount;
+        lockedBalance -= p.amount;
+        notify(`Trade for ${p.pair} completed. Funds added to main balance.`);
+      }
+
       if(!p.claimed){
         activePairs[p.pair] = p;
-        const btn = document.getElementById(`btn-${p.pair}`);
-        const cdEl = document.getElementById(`cd-${p.pair}`);
         if(btn && cdEl){
           btn.classList.add("active");
           btn.innerText = "Trade is ongoing";
-          // start countdown
+
+          // Start countdown
           const updateCountdown = () => {
             const remaining = p.maturity - Date.now();
             if(remaining > 0){
@@ -154,9 +169,10 @@ onAuthStateChanged(auth, async user => {
           setInterval(updateCountdown,1000);
         }
       }
-    });
+    }
   }
 
+  // Trade button actions
   plans.forEach(plan=>{
     const btn=document.getElementById(`btn-${plan.pair}`);
     if(!btn) return;
@@ -192,6 +208,7 @@ onAuthStateChanged(auth, async user => {
     };
   });
 
+  // Robot purchase
   purchaseBtn.onclick=async()=>{
     if(robotPurchased) return;
     if(mainBalance <150) return notify("Insufficient balance");
