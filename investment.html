@@ -3,23 +3,25 @@
 <head>
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-<title>Quantum Apex Investments & Robot</title>
+<title>My Investments - Quantum Apex</title>
 
 <script src="https://cdn.tailwindcss.com"></script>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
 
 <style>
-body { font-family:'Inter', sans-serif; background:#0f172a; color:white; }
+body { font-family: 'Inter', sans-serif; background:#0f172a; }
 
 .toast{
   position:fixed;
-  top:50%; left:50%;
+  top:50%;
+  left:50%;
   transform:translate(-50%,-50%);
   background:#1e293b;
   padding:20px 40px;
   border-radius:12px;
   box-shadow:0 0 25px rgba(16,185,129,0.4);
-  display:none; z-index:1000;
+  display:none;
+  z-index:1000;
   color:white;
   text-align:center;
 }
@@ -50,78 +52,32 @@ body { font-family:'Inter', sans-serif; background:#0f172a; color:white; }
   padding:1rem;
   margin-bottom:1rem;
 }
-
-.robot-card{
-  background: linear-gradient(135deg, #0f766e, #14b8a6);
-  border-radius:16px;
-  padding:1rem 1.5rem;
-  display:flex;
-  justify-content:space-between;
-  align-items:center;
-  gap:1rem;
-  margin-bottom:1rem;
-  box-shadow:0 4px 10px rgba(0,0,0,0.4);
-}
-.robot-info p{margin:0;}
-.robot-price{font-weight:bold; color:#facc15;}
-.robot-desc{font-size:0.85rem; color:#d1d5db;}
-.robot-button{background:white; color:#0f172a; border:none; padding:0.6rem 1rem; border-radius:8px; font-weight:bold; cursor:pointer;}
-.robot-icon{width:60px; height:60px; flex-shrink:0; background:#e2e8f0; border-radius:50%; display:flex; align-items:center; justify-content:center; font-size:2rem; color:#0f172a;}
-
-.trade-btn{background:#16a34a; color:white; padding:0.8rem; border-radius:8px; font-weight:bold; width:100%; margin-top:0.8rem;}
-.trade-btn.disabled{background:#555; cursor:not-allowed;}
-.trade-btn.active{background:#0ea5e9;}
-
-.countdown{font-weight:bold; color:#10b981; margin-top:0.5rem;}
 </style>
 </head>
 
 <body class="text-white min-h-screen flex flex-col">
 
 <nav class="flex justify-between items-center px-6 py-4 bg-slate-900 shadow-lg">
-<h1 class="text-2xl font-bold text-emerald-400">Investments & Robot</h1>
-<button onclick="window.location.href='dashboard.html'" class="bg-gray-600 px-4 py-2 rounded hover:bg-gray-700">Back</button>
+  <h1 class="text-2xl font-bold text-emerald-400">My Investments</h1>
+  <button onclick="window.location.href='dashboard.html'" class="bg-gray-600 px-4 py-2 rounded hover:bg-gray-700">Back</button>
 </nav>
 
 <section class="flex-1 p-6 space-y-6">
 
-<!-- Robot Purchase -->
-<div class="robot-card">
-<div class="robot-icon">🤖</div>
-<div class="robot-info">
-<p class="robot-title">Quantum Apex Robot</p>
-<p class="robot-price">Price: $150</p>
-<p class="robot-desc">AI trading for crypto, forex & binary markets. Potential ROI up to 20% in 3 days.</p>
-</div>
-<button id="purchaseRobot" class="robot-button">Purchase Robot 🤖</button>
-</div>
+  <div class="bg-slate-800 p-6 rounded-2xl space-y-4">
+    <h2 class="text-xl font-semibold text-emerald-400">Active Investments</h2>
+    <div id="activeInvestments">Loading...</div>
+  </div>
 
-<!-- Balances -->
-<p class="balance" id="userBalance">Balance: $0</p>
+  <div class="bg-slate-800 p-6 rounded-2xl space-y-4">
+    <h2 class="text-xl font-semibold text-yellow-400">Completed Investments</h2>
+    <div id="completedInvestments"></div>
+  </div>
 
-<!-- Active Investments -->
-<div class="bg-slate-800 p-6 rounded-2xl space-y-4">
-<h2 class="text-xl font-semibold text-emerald-400">Active Investments</h2>
-<div id="activeInvestments">Loading...</div>
-</div>
-
-<!-- Completed Investments -->
-<div class="bg-slate-800 p-6 rounded-2xl space-y-4">
-<h2 class="text-xl font-semibold text-yellow-400">Completed Investments</h2>
-<div id="completedInvestments"></div>
-</div>
-
-<!-- Ongoing Trades -->
-<div class="bg-slate-800 p-6 rounded-2xl space-y-4">
-<h2 class="text-xl font-semibold text-emerald-400">Ongoing Trades (Robots)</h2>
-<div id="trades">Loading...</div>
-</div>
-
-<!-- Trading Plans -->
-<div class="bg-slate-800 p-6 rounded-2xl space-y-4">
-<h2 class="text-xl font-semibold text-emerald-400">Trading Plans</h2>
-<div id="plansContainer" class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4"></div>
-</div>
+  <div class="bg-slate-800 p-6 rounded-2xl space-y-4">
+    <h2 class="text-xl font-semibold text-emerald-400">Ongoing Trades (Robots)</h2>
+    <div id="trades">Loading...</div>
+  </div>
 
 </section>
 
@@ -131,7 +87,7 @@ body { font-family:'Inter', sans-serif; background:#0f172a; color:white; }
 
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
 import { getAuth,onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js";
-import { getDatabase,ref,onValue,get,set,push,update } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-database.js";
+import { getDatabase,ref,onValue,update,get } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-database.js";
 
 const firebaseConfig={
   apiKey:"AIzaSyDaEphuY2kQue8m-20DDs68JDgQirAycBE",
@@ -144,24 +100,11 @@ const app=initializeApp(firebaseConfig);
 const auth=getAuth(app);
 const db=getDatabase(app);
 
-const plans=[
-  { pair:'EURUSD', price:100, payout:120, days:3 },
-  { pair:'GBPUSD', price:200, payout:240, days:3 },
-  { pair:'BTCUSD', price:10000, payout:16000 }
-];
-
-const plansContainer=document.getElementById("plansContainer");
-const purchaseBtn=document.getElementById("purchaseRobot");
-const userBalanceEl=document.getElementById("userBalance");
-const notification=document.getElementById("toast");
-
-let activeTrades={};
-let countdownInterval=null;
-
 function showToast(msg){
-  notification.innerText=msg;
-  notification.style.display="block";
-  setTimeout(()=>notification.style.display="none",3000);
+  const toast=document.getElementById("toast");
+  toast.innerText=msg;
+  toast.style.display="block";
+  setTimeout(()=>toast.style.display="none",3000);
 }
 
 function formatTime(ms){
@@ -173,86 +116,18 @@ function formatTime(ms){
   return `${d}d ${h}h ${m}m ${s}s`;
 }
 
-onAuthStateChanged(auth, async user=>{
-  if(!user) return location.href="login.html";
-  const userRef=ref(db,"users/"+user.uid);
-  const investmentsRef=ref(db,"investments/"+user.uid);
-  const payoutsRef=ref(db,"payouts/"+user.uid);
+onAuthStateChanged(auth,user=>{
+  if(!user){ window.location.href="login.html"; return; }
 
-  const loadUser = async ()=>{
-    const snap=await get(userRef);
-    return snap.val() || { mainBalance:0, robotPurchased:false, lockedBalance:0 };
-  }
+  const investmentsRef=ref(db,`investments/${user.uid}`);
+  const payoutsRef=ref(db,`payouts/${user.uid}`);
+  const balanceRef=ref(db,`users/${user.uid}/balance`);
 
-  let userData=await loadUser();
-  let mainBalance=userData.mainBalance||0;
-  let lockedBalance=userData.lockedBalance||0;
-  let robotPurchased=!!userData.robotPurchased;
-
-  userBalanceEl.innerText=`Balance: $${mainBalance} | Locked: $${lockedBalance}`;
-
-  if(robotPurchased){
-    purchaseBtn.innerText="Robot active now";
-    purchaseBtn.classList.add("active");
-    purchaseBtn.disabled=true;
-  }
-
-  // Render trading plans
-  plansContainer.innerHTML="";
-  plans.forEach(plan=>{
-    const div=document.createElement("div");
-    div.className="card";
-    div.innerHTML=`
-      <strong>${plan.pair}</strong>
-      <div>Invest $${plan.price} → Earn $${plan.payout}</div>
-      <div class="countdown" id="cd-${plan.pair}"></div>
-      <button class="trade-btn ${!robotPurchased?'disabled':''}" id="btn-${plan.pair}">Trade Now</button>`;
-    plansContainer.appendChild(div);
-  });
-
-  // Robot purchase
-  purchaseBtn.onclick=async()=>{
-    if(robotPurchased) return;
-    if(mainBalance<150) return showToast("Insufficient balance");
-    mainBalance-=150;
-    await update(userRef,{ mainBalance, robotPurchased:true });
-    purchaseBtn.innerText="Robot active now";
-    purchaseBtn.classList.add("active");
-    purchaseBtn.disabled=true;
-    userBalanceEl.innerText=`Balance: $${mainBalance} | Locked: $${lockedBalance}`;
-    showToast("Robot activated");
-    // Enable trade buttons
-    plans.forEach(plan=>document.getElementById(`btn-${plan.pair}`).classList.remove("disabled"));
-  };
-
-  // Handle trade button clicks
-  plans.forEach(plan=>{
-    const btn=document.getElementById(`btn-${plan.pair}`);
-    btn.onclick=async()=>{
-      if(!robotPurchased) return showToast("Buy robot first");
-      const u=await loadUser();
-      if(u.mainBalance<plan.price) return showToast("Insufficient balance");
-
-      const refId=push(payoutsRef);
-      const maturity=Date.now()+plan.days*86400000;
-      await set(refId,{ pair:plan.pair, amount:plan.payout, maturity, claimed:false, completed:false });
-      await update(userRef,{ mainBalance:u.mainBalance-plan.price, lockedBalance:u.lockedBalance+plan.payout });
-
-      // Update UI immediately
-      activeTrades[plan.pair]={ pair:plan.pair, amount:plan.payout, maturity, id:refId.key };
-      btn.innerText="Trade is ongoing";
-      btn.classList.add("active");
-      btn.disabled=true;
-      mainBalance-=plan.price;
-      lockedBalance+=plan.payout;
-      userBalanceEl.innerText=`Balance: $${mainBalance} | Locked: $${lockedBalance}`;
-      showToast("Trade started");
-    };
-  });
+  const activeIntervals={};
+  const tradeIntervals={};
 
   // Investments listener
-  const activeIntervals={};
-  onValue(investmentsRef, snapshot=>{
+  onValue(investmentsRef,snapshot=>{
     const activeDiv=document.getElementById("activeInvestments");
     const completedDiv=document.getElementById("completedInvestments");
 
@@ -263,12 +138,14 @@ onAuthStateChanged(auth, async user=>{
       const durationMs=(inv.durationDays||7)*86400000;
       const end=start+durationMs;
 
+      // Completed investments
       if(inv.status==="completed"){
         if(!document.getElementById(`completed-${id}`)){
           const div=document.createElement("div");
           div.id=`completed-${id}`;
           div.className="card";
-          div.innerHTML=`<div class="font-semibold">${inv.planName}</div>
+          div.innerHTML=`
+            <div class="font-semibold">${inv.planName}</div>
             <div class="text-gray-400">Amount: $${inv.amount} | ROI: ${inv.roi}% | Payout: $${inv.payout}</div>
             <div class="text-yellow-400 text-sm mt-1">Completed ✔</div>`;
           completedDiv.appendChild(div);
@@ -276,11 +153,13 @@ onAuthStateChanged(auth, async user=>{
         return;
       }
 
+      // Active investments
       if(!document.getElementById(`active-${id}`)){
         const div=document.createElement("div");
         div.id=`active-${id}`;
         div.className="card";
-        div.innerHTML=`<div class="font-semibold">${inv.planName}</div>
+        div.innerHTML=`
+          <div class="font-semibold">${inv.planName}</div>
           <div class="text-gray-400">Amount: $${inv.amount} | ROI: ${inv.roi}% | Payout: $${inv.payout}</div>
           <div class="progress-bar-container"><div class="progress-bar" id="progress-${id}"></div></div>
           <div class="text-gray-400 text-xs mt-1" id="time-${id}"></div>`;
@@ -296,24 +175,29 @@ onAuthStateChanged(auth, async user=>{
         const elapsed=now-start;
         const percent=Math.min((elapsed/durationMs)*100,100);
         progressEl.style.width=percent+"%";
+
         const remaining=end-now;
-        if(remaining>0) timeEl.innerText="Time remaining: "+formatTime(remaining);
-        else{
+        if(remaining>0){
+          timeEl.innerText="Time remaining: "+formatTime(remaining);
+        } else {
           timeEl.innerText="Investment completed";
           progressEl.classList.add("gold");
+
           const invRef=ref(db,`investments/${user.uid}/${id}`);
           const snap=await get(invRef);
           const data=snap.val();
           if(data.status!=="completed"){
-            const balSnap=await get(ref(db,`users/${user.uid}/balance`));
+            const balSnap=await get(balanceRef);
             const currentBal=balSnap.val()||0;
-            await update(ref(db,`users/${user.uid}/balance`),currentBal+Number(data.payout));
+            await update(balanceRef, currentBal+Number(data.payout));
             await update(invRef,{status:"completed"});
             showToast(`Profit $${data.payout} credited`);
+
             const divCompleted=document.createElement("div");
             divCompleted.id=`completed-${id}`;
             divCompleted.className="card";
-            divCompleted.innerHTML=`<div class="font-semibold">${data.planName}</div>
+            divCompleted.innerHTML=`
+              <div class="font-semibold">${data.planName}</div>
               <div class="text-gray-400">Amount: $${data.amount} | ROI: ${data.roi}% | Payout: $${data.payout}</div>
               <div class="text-yellow-400 text-sm mt-1">Completed ✔</div>`;
             completedDiv.appendChild(divCompleted);
@@ -327,34 +211,45 @@ onAuthStateChanged(auth, async user=>{
   });
 
   // Trades listener
-  const tradeIntervals={};
-  onValue(ref(db,`payouts/${user.uid}`), snapshot=>{
+  onValue(payoutsRef,snapshot=>{
     const tradesDiv=document.getElementById("trades");
+
     snapshot.forEach(child=>{
       const trade=child.val();
       const id=child.key;
+
       if(document.getElementById(`trade-${id}`)) return;
+
       const start=Number(trade.timestamp||Date.now());
       const durationMs=3*86400000;
+
       const div=document.createElement("div");
       div.id=`trade-${id}`;
       div.className="card";
-      div.innerHTML=`<div class="font-semibold">Robot Trade: ${trade.pair||"Auto Trade"}</div>
+      div.innerHTML=`
+        <div class="font-semibold">Robot Trade: ${trade.pair||"Auto Trade"}</div>
         <div class="text-gray-400">Amount: $${trade.amount} | Status: ${trade.status||'Trading...'}</div>
         <div class="progress-bar-container"><div class="progress-bar" id="trade-progress-${id}"></div></div>
         <div class="text-gray-400 text-xs mt-1" id="trade-time-${id}"></div>`;
       tradesDiv.appendChild(div);
+
       const progressEl=document.getElementById(`trade-progress-${id}`);
       const timeEl=document.getElementById(`trade-time-${id}`);
+
       if(tradeIntervals[id]) clearInterval(tradeIntervals[id]);
       function updateTrade(){
-        const now=Date.now();
-        const elapsed=now-start;
-        const percent=Math.min((elapsed/durationMs)*100,100);
-        progressEl.style.width=percent+"%";
-        const remaining=durationMs-elapsed;
-        if(remaining>0) timeEl.innerText="Time remaining: "+formatTime(remaining);
-        else timeEl.innerText="Trade completed";
+        const now = Date.now();
+        const elapsed = now - start;
+        const percent = Math.min((elapsed/durationMs)*100,100);
+        progressEl.style.width = percent + "%";
+
+        const remaining = durationMs - elapsed;
+        if(remaining>0){
+          timeEl.innerText = "Time remaining: " + formatTime(remaining);
+        } else {
+          timeEl.innerText = "Trade completed";
+          progressEl.classList.add("gold");
+        }
       }
       updateTrade();
       tradeIntervals[id]=setInterval(updateTrade,1000);
@@ -365,4 +260,4 @@ onAuthStateChanged(auth, async user=>{
 </script>
 
 </body>
-  </html>
+</html>
