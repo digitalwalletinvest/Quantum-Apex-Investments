@@ -78,7 +78,7 @@ body {
   font-weight: 600;
 }
 
-/* --- Modal styles --- */
+/* Modal styles */
 .modal-overlay {
   position: fixed;
   inset: 0;
@@ -98,6 +98,7 @@ body {
   box-shadow: 0 10px 25px rgba(0,0,0,0.5);
   text-align: center;
   color: white;
+  position: relative;
 }
 
 .modal h2 {
@@ -107,8 +108,25 @@ body {
 }
 
 .modal .icon {
-  font-size: 60px;
-  margin-bottom: 15px;
+  width: 80px;
+  height: 80px;
+  line-height: 80px;
+  border-radius: 50%;
+  font-size: 40px;
+  margin: 0 auto 15px auto;
+  background: #22c55e;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: white;
+}
+
+.modal .icon.pending {
+  background: #f59e0b;
+}
+
+.modal .icon.rejected {
+  background: #ef4444;
 }
 
 .modal p {
@@ -152,7 +170,7 @@ body {
 <!-- Modal -->
 <div id="modalOverlay" class="modal-overlay flex">
   <div class="modal" id="modalContent">
-    <div class="icon" id="modalIcon">✅</div>
+    <div class="icon" id="modalIcon">✔️</div>
     <h2>Transaction Details</h2>
     <div id="modalBody"></div>
     <button onclick="closeModal()">Close</button>
@@ -201,71 +219,70 @@ function getMethod(tx){
   return "USDT";
 }
 
-function openModal(content, status, txRef){
-  modalBody.innerHTML = content;
-  if(status.toLowerCase() === "approved"){
-    modalIcon.textContent = "✅";
-  } else if(status.toLowerCase() === "pending"){
-    modalIcon.textContent = "⚠️";
-  } else {
-    modalIcon.textContent = "❌";
-  }
+function openModal(status, txRef){
+  if(!txRef) return;
   modalOverlay.style.display = "flex";
 
-  // Real-time update while modal is open
-  if(txRef){
-    onValue(txRef, snap => {
-      const tx = snap.val();
-      if(!tx) return;
-      const method = getMethod(tx);
-      const status = tx.status || "pending";
-      const wallet = tx.receivingAddress || "N/A";
-      const phone = tx.phoneNumber || "N/A";
-      const network = tx.network || "";
+  const updateModal = snap => {
+    const tx = snap.val();
+    if(!tx) return;
+    const method = getMethod(tx);
+    const wallet = tx.receivingAddress || "N/A";
+    const phone = tx.phoneNumber || "N/A";
+    const network = tx.network || "";
+    const statusText = tx.status || "pending";
 
-      let content = "";
-      if(tx.receivingAddressType || tx.phoneNumber){
-        // Withdrawal
-        content = `
-          <p><b>Amount:</b> $${Number(tx.amount).toFixed(2)}</p>
-          <p><b>Method:</b> ${method}</p>
-          ${tx.receivingAddress?`<p><b>Wallet Address:</b> ${wallet}</p>`:""}
-          ${tx.phoneNumber?`<p><b>Network:</b> ${network}</p><p><b>Phone Number:</b> ${phone}</p>`:""}
-          <p class="status"><b>Status:</b> ${status}</p>
-        `;
-      } else {
-        // Deposit
-        content = `
-          <p><b>Date & Time:</b> ${formatDate(tx.timestamp)}</p>
-          <p><b>Amount:</b> $${Number(tx.amount).toFixed(2)}</p>
-          <p><b>Method:</b> ${method}</p>
-          <p class="status"><b>Status:</b> ${status}</p>
-        `;
-      }
-      modalBody.innerHTML = content;
-      // Update icon
-      if(status.toLowerCase() === "approved"){
-        modalIcon.textContent = "✅";
-      } else if(status.toLowerCase() === "pending"){
-        modalIcon.textContent = "⚠️";
-      } else {
-        modalIcon.textContent = "❌";
-      }
-    });
+    let content = "";
+    if(tx.receivingAddressType || tx.phoneNumber){
+      // Withdrawal
+      content = `
+        <p><b>Amount:</b> $${Number(tx.amount).toFixed(2)}</p>
+        <p><b>Method:</b> ${method}</p>
+        ${tx.receivingAddress?`<p><b>Wallet Address:</b> ${wallet}</p>`:""}
+        ${tx.phoneNumber?`<p><b>Network:</b> ${network}</p><p><b>Phone Number:</b> ${phone}</p>`:""}
+        <p class="status"><b>Status:</b> ${statusText}</p>
+      `;
+    } else {
+      // Deposit
+      content = `
+        <p><b>Date & Time:</b> ${formatDate(tx.timestamp)}</p>
+        <p><b>Amount:</b> $${Number(tx.amount).toFixed(2)}</p>
+        <p><b>Method:</b> ${method}</p>
+        <p class="status"><b>Status:</b> ${statusText}</p>
+      `;
+    }
+
+    modalBody.innerHTML = content;
+
+    // Update icon style
+    modalIcon.classList.remove("approved","pending","rejected");
+    if(statusText.toLowerCase() === "approved"){
+      modalIcon.textContent = "✔️";
+      modalIcon.classList.add("approved");
+      modalIcon.style.background = "#22c55e";
+    } else if(statusText.toLowerCase() === "pending"){
+      modalIcon.textContent = "⚠️";
+      modalIcon.classList.add("pending");
+      modalIcon.style.background = "#f59e0b";
+    } else {
+      modalIcon.textContent = "❌";
+      modalIcon.classList.add("rejected");
+      modalIcon.style.background = "#ef4444";
+    }
   }
+
+  onValue(txRef, updateModal);
 }
 
 function closeModal(){
   modalOverlay.style.display = "none";
 }
 
-// Create card with modal on click
 function createCard(tx,type,userUid){
   const card = document.createElement("div");
   card.className = `card ${type==="deposit"?"deposit":"withdraw"}`;
-  
-  const method = getMethod(tx);
   const status = tx.status || "pending";
+  const method = getMethod(tx);
 
   card.innerHTML = `
     <div class="card-header">
@@ -276,9 +293,8 @@ function createCard(tx,type,userUid){
   `;
 
   card.onclick = () => {
-    // Reference to this transaction in Firebase
     const txRef = ref(db, `${type==="deposit"?"deposits":"withdrawals"}/${userUid}/${tx.id}`);
-    openModal("", status, txRef);
+    openModal(status, txRef);
   }
 
   return card;
@@ -315,6 +331,13 @@ onAuthStateChanged(auth, user => {
       .sort((a,b)=>b.timestamp - a.timestamp)
       .forEach(tx => withdrawContainer.appendChild(createCard(tx,"withdraw", user.uid)));
   });
+});
+
+// Close modal if clicking outside
+modalOverlay.addEventListener("click", e => {
+  if(e.target === modalOverlay){
+    closeModal();
+  }
 });
 </script>
 
