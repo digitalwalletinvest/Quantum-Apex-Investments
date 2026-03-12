@@ -199,6 +199,7 @@ function getMethod(tx){
 function openModal(tx) {
   const status = tx.status || "pending";
   let content = "";
+
   if(tx.receivingAddressType || tx.phoneNumber){
     // Withdrawal
     content = `
@@ -217,6 +218,7 @@ function openModal(tx) {
       <p><b>Method:</b> ${getMethod(tx)}</p>
     `;
   }
+
   modalBody.innerHTML = content;
 
   // Set icon
@@ -244,9 +246,11 @@ function createCard(tx,type,userUid){
   card.className = `card ${type==="deposit"?"deposit":"withdraw"}`;
   const status = tx.status || "pending";
   const method = getMethod(tx);
+
+  let icon = type==="deposit" ? "💰" : "📤";
   card.innerHTML = `
     <div class="card-header">
-      <div class="left">${type==="deposit"?"💰":"📤"} ${method}</div>
+      <div class="left">${icon} ${method}</div>
       <div class="font-bold">$${Number(tx.amount).toFixed(2)}</div>
       <div class="capitalize text-sm ${getStatusClass(status)}">${status}</div>
     </div>
@@ -278,4 +282,4 @@ modalOverlay.addEventListener("click", e => { if(e.target===modalOverlay) closeM
 </script>
 
 </body>
-</html>
+  </html>
