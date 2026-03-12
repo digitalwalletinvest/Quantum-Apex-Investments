@@ -93,9 +93,24 @@ body {
 .card-details p {
   margin: 6px 0;
   font-size: 15px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
 }
 
-.card-details .status { font-weight: 700; }
+.card-details p b { margin-right: 5px; }
+
+.copy-btn {
+  background: #10b981;
+  color: white;
+  border: none;
+  padding: 3px 8px;
+  font-size: 12px;
+  border-radius: 6px;
+  cursor: pointer;
+}
+
+.copy-btn:hover { background: #059669; }
 
 @keyframes fadeIn { from {opacity:0;} to {opacity:1;} }
 </style>
@@ -148,11 +163,9 @@ function getMethod(tx){
   return "USDT";
 }
 
-// Create card with expandable professional details
-function createCard(tx,type,userUid){
+function createCard(tx,type){
   const card = document.createElement("div");
   card.className = `card ${type}`;
-
   const status = tx.status || "pending";
   const method = getMethod(tx);
   const icon = type==="deposit" ? "💰" : "📤";
@@ -165,16 +178,20 @@ function createCard(tx,type,userUid){
     </div>
     <div class="card-details">
       ${type==="deposit" ? `
-        <p><b>Amount Deposited:</b> $${Number(tx.amount).toFixed(2)}</p>
-        <p><b>Date & Time:</b> ${formatDate(tx.timestamp)}</p>
-        <p><b>Method:</b> ${method}</p>
-        <p class="status"><b>Status:</b> ${status}</p>
+        <p>💰 <b>Amount Deposited:</b> $${Number(tx.amount).toFixed(2)}</p>
+        <p>🕒 <b>Date & Time:</b> ${formatDate(tx.timestamp)}</p>
+        <p>💳 <b>Method:</b> ${method}</p>
+        <p class="status">📌 <b>Status:</b> ${status}</p>
       ` : `
-        <p><b>Amount Withdrawn:</b> $${Number(tx.amount).toFixed(2)}</p>
-        <p><b>Method:</b> ${method}</p>
-        ${tx.receivingAddress ? `<p><b>Wallet Address:</b> <span style="color:#22c55e">${tx.receivingAddress}</span></p>` : ""}
-        ${tx.phoneNumber ? `<p><b>Network:</b> ${tx.network}</p><p><b>Phone Number:</b> ${tx.phoneNumber}</p>` : ""}
-        <p class="status"><b>Status:</b> ${status}</p>
+        <p>📤 <b>Amount Withdrawn:</b> $${Number(tx.amount).toFixed(2)}</p>
+        <p>💳 <b>Method:</b> ${method}</p>
+        ${tx.receivingAddress ? `
+          <p>🔗 <b>Wallet Address:</b> 
+            <span style="color:#22c55e">${tx.receivingAddress}</span>
+            <button class="copy-btn" onclick="navigator.clipboard.writeText('${tx.receivingAddress}')">Copy</button>
+          </p>` : ""}
+        ${tx.phoneNumber ? `<p>📱 <b>Network:</b> ${tx.network}</p><p>📞 <b>Phone Number:</b> ${tx.phoneNumber}</p>` : ""}
+        <p class="status">📌 <b>Status:</b> ${status}</p>
       `}
     </div>
   `;
@@ -195,17 +212,16 @@ onAuthStateChanged(auth, user => {
   onValue(depRef, snap => {
     depositContainer.innerHTML = "";
     if(!snap.exists()){ depositContainer.innerHTML="<p class='text-gray-400'>No deposits</p>"; return; }
-    Object.values(snap.val()).sort((a,b)=>b.timestamp-a.timestamp).forEach(tx=>depositContainer.appendChild(createCard(tx,"deposit", user.uid)));
+    Object.values(snap.val()).sort((a,b)=>b.timestamp-a.timestamp).forEach(tx=>depositContainer.appendChild(createCard(tx,"deposit")));
   });
 
   const witRef = ref(db, "withdrawals/"+user.uid);
   onValue(witRef, snap => {
     withdrawContainer.innerHTML = "";
     if(!snap.exists()){ withdrawContainer.innerHTML="<p class='text-gray-400'>No withdrawals</p>"; return; }
-    Object.values(snap.val()).sort((a,b)=>b.timestamp-a.timestamp).forEach(tx=>withdrawContainer.appendChild(createCard(tx,"withdraw", user.uid)));
+    Object.values(snap.val()).sort((a,b)=>b.timestamp-a.timestamp).forEach(tx=>withdrawContainer.appendChild(createCard(tx,"withdraw")));
   });
 });
 </script>
-
 </body>
 </html>
