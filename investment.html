@@ -46,11 +46,45 @@ body { font-family: 'Inter', sans-serif; background:#0f172a; }
   background:gold;
 }
 
+/* Card styling */
 .card{
   background:#1e293b;
   border-radius:12px;
   padding:1rem;
   margin-bottom:1rem;
+  text-align:center;
+  color:#9ca3af;
+  font-weight:500;
+  opacity: 0;
+  transform: translateY(10px);
+  animation: fadeIn 0.5s forwards;
+}
+
+/* Empty card for no data */
+.card.empty{
+  background:#111827;
+  color:#6b7280;
+  font-style:italic;
+}
+
+/* Fade-in animation */
+@keyframes fadeIn {
+  to {
+    opacity:1;
+    transform: translateY(0);
+  }
+}
+
+/* Fade-out animation */
+.fade-out {
+  animation: fadeOut 0.5s forwards;
+}
+
+@keyframes fadeOut {
+  to {
+    opacity:0;
+    transform: translateY(-10px);
+  }
 }
 </style>
 </head>
@@ -66,17 +100,22 @@ body { font-family: 'Inter', sans-serif; background:#0f172a; }
 
   <div class="bg-slate-800 p-6 rounded-2xl space-y-4">
     <h2 class="text-xl font-semibold text-emerald-400">Active Investments</h2>
-    <div id="activeInvestments">Loading...</div>
+    <div id="activeInvestments"><div class="card empty">No investments yet</div></div>
   </div>
 
   <div class="bg-slate-800 p-6 rounded-2xl space-y-4">
     <h2 class="text-xl font-semibold text-yellow-400">Completed Investments</h2>
-    <div id="completedInvestments"></div>
+    <div id="completedInvestments"><div class="card empty">No investments yet</div></div>
   </div>
 
   <div class="bg-slate-800 p-6 rounded-2xl space-y-4">
     <h2 class="text-xl font-semibold text-emerald-400">Ongoing Trades (Robots)</h2>
-    <div id="trades">Loading...</div>
+    <div id="trades"><div class="card empty">No trades yet</div></div>
+  </div>
+
+  <div class="bg-slate-800 p-6 rounded-2xl space-y-4">
+    <h2 class="text-xl font-semibold text-yellow-400">Completed Trades</h2>
+    <div id="completedTrades"><div class="card empty">No trades yet</div></div>
   </div>
 
 </section>
@@ -116,6 +155,12 @@ function formatTime(ms){
   return `${d}d ${h}h ${m}m ${s}s`;
 }
 
+function fadeOutAndRemove(el){
+  if(!el) return;
+  el.classList.add("fade-out");
+  setTimeout(()=>el.remove(),500);
+}
+
 onAuthStateChanged(auth,user=>{
   if(!user){ window.location.href="login.html"; return; }
 
@@ -131,6 +176,13 @@ onAuthStateChanged(auth,user=>{
     const activeDiv=document.getElementById("activeInvestments");
     const completedDiv=document.getElementById("completedInvestments");
 
+    // Remove old empty cards with fade-out
+    activeDiv.querySelectorAll(".card.empty").forEach(el=>fadeOutAndRemove(el));
+    completedDiv.querySelectorAll(".card.empty").forEach(el=>fadeOutAndRemove(el));
+
+    let hasActive = false;
+    let hasCompleted = false;
+
     snapshot.forEach(child=>{
       const inv=child.val();
       const id=child.key;
@@ -138,8 +190,8 @@ onAuthStateChanged(auth,user=>{
       const durationMs=(inv.durationDays||7)*86400000;
       const end=start+durationMs;
 
-      // Completed investments
       if(inv.status==="completed"){
+        hasCompleted = true;
         if(!document.getElementById(`completed-${id}`)){
           const div=document.createElement("div");
           div.id=`completed-${id}`;
@@ -153,7 +205,7 @@ onAuthStateChanged(auth,user=>{
         return;
       }
 
-      // Active investments
+      hasActive = true;
       if(!document.getElementById(`active-${id}`)){
         const div=document.createElement("div");
         div.id=`active-${id}`;
@@ -208,30 +260,58 @@ onAuthStateChanged(auth,user=>{
       updateTimer();
       activeIntervals[id]=setInterval(updateTimer,1000);
     });
+
+    if(!hasActive) activeDiv.innerHTML = '<div class="card empty">No investments yet</div>';
+    if(!hasCompleted) completedDiv.innerHTML = '<div class="card empty">No investments yet</div>';
   });
 
   // Trades listener
   onValue(payoutsRef,snapshot=>{
     const tradesDiv=document.getElementById("trades");
+    const completedTradesDiv=document.getElementById("completedTrades");
+
+    // Remove old empty cards with fade-out
+    tradesDiv.querySelectorAll(".card.empty").forEach(el=>fadeOutAndRemove(el));
+    completedTradesDiv.querySelectorAll(".card.empty").forEach(el=>fadeOutAndRemove(el));
+
+    let hasActiveTrades = false;
+    let hasCompletedTrades = false;
 
     snapshot.forEach(child=>{
       const trade=child.val();
       const id=child.key;
 
-      if(document.getElementById(`trade-${id}`)) return;
-
       const start=Number(trade.timestamp||Date.now());
       const durationMs=3*86400000;
 
-      const div=document.createElement("div");
-      div.id=`trade-${id}`;
-      div.className="card";
-      div.innerHTML=`
-        <div class="font-semibold">Robot Trade: ${trade.pair||"Auto Trade"}</div>
-        <div class="text-gray-400">Amount: $${trade.amount} | Status: ${trade.status||'Trading...'}</div>
-        <div class="progress-bar-container"><div class="progress-bar" id="trade-progress-${id}"></div></div>
-        <div class="text-gray-400 text-xs mt-1" id="trade-time-${id}"></div>`;
-      tradesDiv.appendChild(div);
+      const isCompleted = trade.claimed || (trade.status==="completed");
+
+      if(isCompleted){
+        hasCompletedTrades = true;
+        if(!document.getElementById(`completed-trade-${id}`)){
+          const div=document.createElement("div");
+          div.id=`completed-trade-${id}`;
+          div.className="card";
+          div.innerHTML=`
+            <div class="font-semibold">Robot Trade: ${trade.pair||"Auto Trade"}</div>
+            <div class="text-gray-400">Amount: $${trade.amount} | Status: Completed ✔</div>`;
+          completedTradesDiv.appendChild(div);
+        }
+        return;
+      }
+
+      hasActiveTrades = true;
+      if(!document.getElementById(`trade-${id}`)){
+        const div=document.createElement("div");
+        div.id=`trade-${id}`;
+        div.className="card";
+        div.innerHTML=`
+          <div class="font-semibold">Robot Trade: ${trade.pair||"Auto Trade"}</div>
+          <div class="text-gray-400">Amount: $${trade.amount} | Status: Trading...</div>
+          <div class="progress-bar-container"><div class="progress-bar" id="trade-progress-${id}"></div></div>
+          <div class="text-gray-400 text-xs mt-1" id="trade-time-${id}"></div>`;
+        tradesDiv.appendChild(div);
+      }
 
       const progressEl=document.getElementById(`trade-progress-${id}`);
       const timeEl=document.getElementById(`trade-time-${id}`);
@@ -249,11 +329,15 @@ onAuthStateChanged(auth,user=>{
         } else {
           timeEl.innerText = "Trade completed";
           progressEl.classList.add("gold");
+          update(ref(db,`payouts/${user.uid}/${id}`),{status:"completed",claimed:true});
         }
       }
       updateTrade();
       tradeIntervals[id]=setInterval(updateTrade,1000);
     });
+
+    if(!hasActiveTrades) tradesDiv.innerHTML = '<div class="card empty">No trades yet</div>';
+    if(!hasCompletedTrades) completedTradesDiv.innerHTML = '<div class="card empty">No trades yet</div>';
   });
 
 });
