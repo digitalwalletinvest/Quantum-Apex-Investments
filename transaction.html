@@ -168,30 +168,29 @@ function createCard(tx,type){
   card.className = `card ${type}`;
   const status = tx.status || "pending";
   const method = getMethod(tx);
-  const icon = type==="deposit" ? "💰" : "📤";
 
   card.innerHTML = `
     <div class="card-header">
-      <div class="left">${icon} ${method}</div>
+      <div class="left">${method}</div>
       <div class="font-bold">$${Number(tx.amount).toFixed(2)}</div>
       <span class="badge ${getStatusClass(status)}">${status}</span>
     </div>
     <div class="card-details">
       ${type==="deposit" ? `
-        <p>💰 <b>Amount Deposited:</b> $${Number(tx.amount).toFixed(2)}</p>
-        <p>🕒 <b>Date & Time:</b> ${formatDate(tx.timestamp)}</p>
-        <p>💳 <b>Method:</b> ${method}</p>
-        <p class="status">📌 <b>Status:</b> ${status}</p>
+        <p><b>Amount Deposited:</b> $${Number(tx.amount).toFixed(2)}</p>
+        <p><b>Date & Time:</b> ${formatDate(tx.timestamp)}</p>
+        <p><b>Method:</b> ${method}</p>
+        <p class="status"><b>Status:</b> ${status}</p>
       ` : `
-        <p>📤 <b>Amount Withdrawn:</b> $${Number(tx.amount).toFixed(2)}</p>
-        <p>💳 <b>Method:</b> ${method}</p>
+        <p><b>Amount Withdrawn:</b> $${Number(tx.amount).toFixed(2)}</p>
+        <p><b>Method:</b> ${method}</p>
         ${tx.receivingAddress ? `
-          <p>🔗 <b>Wallet Address:</b> 
+          <p><b>Wallet Address:</b> 
             <span style="color:#22c55e">${tx.receivingAddress}</span>
             <button class="copy-btn" onclick="navigator.clipboard.writeText('${tx.receivingAddress}')">Copy</button>
           </p>` : ""}
-        ${tx.phoneNumber ? `<p>📱 <b>Network:</b> ${tx.network}</p><p>📞 <b>Phone Number:</b> ${tx.phoneNumber}</p>` : ""}
-        <p class="status">📌 <b>Status:</b> ${status}</p>
+        ${tx.phoneNumber ? `<p><b>Network:</b> ${tx.network}</p><p><b>Phone Number:</b> ${tx.phoneNumber}</p>` : ""}
+        <p class="status"><b>Status:</b> ${status}</p>
       `}
     </div>
   `;
