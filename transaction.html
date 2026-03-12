@@ -63,22 +63,11 @@ body {
   font-weight: 600;
 }
 
-.status-approved {
-  color: #22c55e;
-  font-weight: 600;
-}
+.status-approved { color: #22c55e; font-weight: 600; }
+.status-pending { color: #f59e0b; font-weight: 600; }
+.status-rejected { color: #ef4444; font-weight: 600; }
 
-.status-pending {
-  color: #f59e0b;
-  font-weight: 600;
-}
-
-.status-rejected {
-  color: #ef4444;
-  font-weight: 600;
-}
-
-/* Modal styles */
+/* Modal */
 .modal-overlay {
   position: fixed;
   inset: 0;
@@ -87,6 +76,13 @@ body {
   justify-content: center;
   align-items: center;
   z-index: 1000;
+  opacity: 0;
+  transition: opacity 0.3s ease;
+}
+
+.modal-overlay.show {
+  display: flex;
+  opacity: 1;
 }
 
 .modal {
@@ -98,45 +94,34 @@ body {
   box-shadow: 0 10px 25px rgba(0,0,0,0.5);
   text-align: center;
   color: white;
-  position: relative;
+  transform: scale(0.8);
+  transition: transform 0.3s ease;
 }
 
-.modal h2 {
-  font-size: 24px;
-  font-weight: 700;
-  margin-bottom: 15px;
+.modal-overlay.show .modal {
+  transform: scale(1);
 }
+
+.modal h2 { font-size: 24px; font-weight: 700; margin-bottom: 15px; }
 
 .modal .icon {
   width: 80px;
   height: 80px;
-  line-height: 80px;
   border-radius: 50%;
   font-size: 40px;
   margin: 0 auto 15px auto;
-  background: #22c55e;
   display: flex;
   align-items: center;
   justify-content: center;
   color: white;
 }
 
-.modal .icon.pending {
-  background: #f59e0b;
-}
+.modal .icon.approved { background: #22c55e; }
+.modal .icon.pending { background: #f59e0b; }
+.modal .icon.rejected { background: #ef4444; }
 
-.modal .icon.rejected {
-  background: #ef4444;
-}
-
-.modal p {
-  margin: 8px 0;
-  font-size: 16px;
-}
-
-.modal .status {
-  font-weight: 700;
-}
+.modal p { margin: 8px 0; font-size: 16px; }
+.modal .status { font-weight: 700; }
 
 .modal button {
   margin-top: 20px;
@@ -149,14 +134,11 @@ body {
   cursor: pointer;
 }
 
-.modal button:hover {
-  background: #059669;
-}
+.modal button:hover { background: #059669; }
 </style>
 </head>
 
 <body>
-
 <div class="container">
   <div class="title">Transaction History</div>
 
@@ -168,7 +150,7 @@ body {
 </div>
 
 <!-- Modal -->
-<div id="modalOverlay" class="modal-overlay flex">
+<div id="modalOverlay" class="modal-overlay">
   <div class="modal" id="modalContent">
     <div class="icon" id="modalIcon">✔️</div>
     <h2>Transaction Details</h2>
@@ -194,24 +176,19 @@ const db = getDatabase(app);
 
 const depositContainer = document.getElementById("depositContainer");
 const withdrawContainer = document.getElementById("withdrawContainer");
-
 const modalOverlay = document.getElementById("modalOverlay");
 const modalBody = document.getElementById("modalBody");
 const modalIcon = document.getElementById("modalIcon");
 
-function formatDate(ts) {
-  return new Date(ts).toLocaleString();
-}
-
+function formatDate(ts) { return new Date(ts).toLocaleString(); }
 function getStatusClass(status) {
   if(!status) return "status-pending";
   status = status.toLowerCase();
-  if(status === "approved") return "status-approved";
-  if(status === "pending") return "status-pending";
-  if(status === "rejected") return "status-rejected";
+  if(status==="approved") return "status-approved";
+  if(status==="pending") return "status-pending";
+  if(status==="rejected") return "status-rejected";
   return "";
 }
-
 function getMethod(tx){
   if(tx.receivingAddressType==="TRC20") return "USDT TRC20";
   if(tx.receivingAddressType==="ERC20") return "USDT ERC20";
@@ -219,63 +196,47 @@ function getMethod(tx){
   return "USDT";
 }
 
-function openModal(status, txRef){
-  if(!txRef) return;
-  modalOverlay.style.display = "flex";
+function openModal(tx) {
+  const status = tx.status || "pending";
+  let content = "";
+  if(tx.receivingAddressType || tx.phoneNumber){
+    // Withdrawal
+    content = `
+      <p><b>Amount withdrawn:</b> $${Number(tx.amount).toFixed(2)}</p>
+      <p><b>Method:</b> ${getMethod(tx)}</p>
+      ${tx.receivingAddress?`<p><b>Wallet Address:</b> ${tx.receivingAddress}</p>`:""}
+      ${tx.phoneNumber?`<p><b>Network:</b> ${tx.network}</p><p><b>Phone Number:</b> ${tx.phoneNumber}</p>`:""}
+      <p class="status"><b>Status:</b> ${status}</p>
+    `;
+  } else {
+    // Deposit
+    content = `
+      <p><b>Amount deposited:</b> $${Number(tx.amount).toFixed(2)}</p>
+      <p><b>Date & Time:</b> ${formatDate(tx.timestamp)}</p>
+      <p><b>Status:</b> ${status}</p>
+      <p><b>Method:</b> ${getMethod(tx)}</p>
+    `;
+  }
+  modalBody.innerHTML = content;
 
-  const updateModal = snap => {
-    const tx = snap.val();
-    if(!tx) return;
-    const method = getMethod(tx);
-    const wallet = tx.receivingAddress || "N/A";
-    const phone = tx.phoneNumber || "N/A";
-    const network = tx.network || "";
-    const statusText = tx.status || "pending";
-
-    let content = "";
-    if(tx.receivingAddressType || tx.phoneNumber){
-      // Withdrawal
-      content = `
-        <p><b>Amount:</b> $${Number(tx.amount).toFixed(2)}</p>
-        <p><b>Method:</b> ${method}</p>
-        ${tx.receivingAddress?`<p><b>Wallet Address:</b> ${wallet}</p>`:""}
-        ${tx.phoneNumber?`<p><b>Network:</b> ${network}</p><p><b>Phone Number:</b> ${phone}</p>`:""}
-        <p class="status"><b>Status:</b> ${statusText}</p>
-      `;
-    } else {
-      // Deposit
-      content = `
-        <p><b>Date & Time:</b> ${formatDate(tx.timestamp)}</p>
-        <p><b>Amount:</b> $${Number(tx.amount).toFixed(2)}</p>
-        <p><b>Method:</b> ${method}</p>
-        <p class="status"><b>Status:</b> ${statusText}</p>
-      `;
-    }
-
-    modalBody.innerHTML = content;
-
-    // Update icon style
-    modalIcon.classList.remove("approved","pending","rejected");
-    if(statusText.toLowerCase() === "approved"){
-      modalIcon.textContent = "✔️";
-      modalIcon.classList.add("approved");
-      modalIcon.style.background = "#22c55e";
-    } else if(statusText.toLowerCase() === "pending"){
-      modalIcon.textContent = "⚠️";
-      modalIcon.classList.add("pending");
-      modalIcon.style.background = "#f59e0b";
-    } else {
-      modalIcon.textContent = "❌";
-      modalIcon.classList.add("rejected");
-      modalIcon.style.background = "#ef4444";
-    }
+  // Set icon
+  modalIcon.className = "icon";
+  if(status.toLowerCase() === "approved"){
+    modalIcon.textContent = "✔️";
+    modalIcon.classList.add("approved");
+  } else if(status.toLowerCase() === "pending"){
+    modalIcon.textContent = "⚠️";
+    modalIcon.classList.add("pending");
+  } else {
+    modalIcon.textContent = "❌";
+    modalIcon.classList.add("rejected");
   }
 
-  onValue(txRef, updateModal);
+  modalOverlay.classList.add("show");
 }
 
-function closeModal(){
-  modalOverlay.style.display = "none";
+function closeModal() {
+  modalOverlay.classList.remove("show");
 }
 
 function createCard(tx,type,userUid){
@@ -283,7 +244,6 @@ function createCard(tx,type,userUid){
   card.className = `card ${type==="deposit"?"deposit":"withdraw"}`;
   const status = tx.status || "pending";
   const method = getMethod(tx);
-
   card.innerHTML = `
     <div class="card-header">
       <div class="left">${type==="deposit"?"💰":"📤"} ${method}</div>
@@ -291,54 +251,30 @@ function createCard(tx,type,userUid){
       <div class="capitalize text-sm ${getStatusClass(status)}">${status}</div>
     </div>
   `;
-
-  card.onclick = () => {
-    const txRef = ref(db, `${type==="deposit"?"deposits":"withdrawals"}/${userUid}/${tx.id}`);
-    openModal(status, txRef);
-  }
-
+  card.onclick = () => openModal(tx);
   return card;
 }
 
 onAuthStateChanged(auth, user => {
-  if(!user){
-    location.href="login.html";
-    return;
-  }
+  if(!user){ location.href="login.html"; return; }
 
-  // Deposits
   const depRef = ref(db, "deposits/"+user.uid);
   onValue(depRef, snap => {
     depositContainer.innerHTML = "";
-    if(!snap.exists()){
-      depositContainer.innerHTML="<p class='text-gray-400'>No deposits</p>";
-      return;
-    }
-    Object.values(snap.val())
-      .sort((a,b)=>b.timestamp - a.timestamp)
-      .forEach(tx => depositContainer.appendChild(createCard(tx,"deposit", user.uid)));
+    if(!snap.exists()){ depositContainer.innerHTML="<p class='text-gray-400'>No deposits</p>"; return; }
+    Object.values(snap.val()).sort((a,b)=>b.timestamp-a.timestamp).forEach(tx=>depositContainer.appendChild(createCard(tx,"deposit", user.uid)));
   });
 
-  // Withdrawals
   const witRef = ref(db, "withdrawals/"+user.uid);
   onValue(witRef, snap => {
     withdrawContainer.innerHTML = "";
-    if(!snap.exists()){
-      withdrawContainer.innerHTML="<p class='text-gray-400'>No withdrawals</p>";
-      return;
-    }
-    Object.values(snap.val())
-      .sort((a,b)=>b.timestamp - a.timestamp)
-      .forEach(tx => withdrawContainer.appendChild(createCard(tx,"withdraw", user.uid)));
+    if(!snap.exists()){ withdrawContainer.innerHTML="<p class='text-gray-400'>No withdrawals</p>"; return; }
+    Object.values(snap.val()).sort((a,b)=>b.timestamp-a.timestamp).forEach(tx=>withdrawContainer.appendChild(createCard(tx,"withdraw", user.uid)));
   });
 });
 
 // Close modal if clicking outside
-modalOverlay.addEventListener("click", e => {
-  if(e.target === modalOverlay){
-    closeModal();
-  }
-});
+modalOverlay.addEventListener("click", e => { if(e.target===modalOverlay) closeModal(); });
 </script>
 
 </body>
