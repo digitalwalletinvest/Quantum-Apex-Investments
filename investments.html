@@ -58,10 +58,7 @@ const firebaseConfig = {
   apiKey: "AIzaSyDaEphuY2kQue8m-20DDs68JDgQirAycBE",
   authDomain: "digital-wallet-40297.firebaseapp.com",
   databaseURL: "https://digital-wallet-40297-default-rtdb.europe-west1.firebasedatabase.app",
-  projectId: "digital-wallet-40297",
-  storageBucket: "digital-wallet-40297.firebasestorage.app",
-  messagingSenderId: "953454788272",
-  appId: "1:953454788272:android:961fd704f587cf1b8c8575"
+  projectId: "digital-wallet-40297"
 };
 
 const app = initializeApp(firebaseConfig);
@@ -70,7 +67,7 @@ const db = getDatabase(app);
 
 let currentUser = null;
 let userData = null;
-let countdownInterval = null; // single global interval
+let countdownInterval = null;
 
 function showToast(msg, success=true){
   const toast = document.getElementById("toast");
@@ -94,7 +91,7 @@ const plans = [
   { name: "Plan $10000", min: 10000, roi: 20, durationDays: 7 }
 ];
 
-let activeInvestments = {}; // store active investments for countdown
+let activeInvestments = {};
 
 onAuthStateChanged(auth, async (user) => {
   if (!user) {
@@ -125,14 +122,14 @@ async function processOfflineMatured(){
 
   invSnap.forEach(child => {
     const inv = child.val();
-    if(inv.status==="active" && !inv.processed){
-      const maturity = inv.startTime + (inv.durationDays||7)*86400000;
-      if(Date.now() >= maturity){
-        updatedMain += inv.payout;
-        updatedLocked -= inv.amount;
-        updates.push(update(ref(db, `investments/${currentUser.uid}/${child.key}`), { status:"completed", processed:true }));
-        showToast(`${inv.planName} matured while offline. $${inv.payout} credited.`);
-      }
+    const durationMs = (inv.durationDays || 7) * 86400000;
+    const maturityTime = inv.startTime + durationMs;
+
+    if(inv.status==="active" && !inv.processed && Date.now() >= maturityTime){
+      updatedMain += inv.payout;
+      updatedLocked -= inv.amount;
+      updates.push(update(ref(db, `investments/${currentUser.uid}/${child.key}`), { status:"completed", processed:true }));
+      showToast(`${inv.planName} matured while offline. $${inv.payout} credited.`);
     }
   });
 
@@ -142,7 +139,7 @@ async function processOfflineMatured(){
   }
 }
 
-// --- Render plans and initialize global countdown ---
+// --- Render plans and restore countdown ---
 async function renderPlans(){
   const container = document.getElementById("plansContainer");
   container.innerHTML = "";
@@ -185,25 +182,45 @@ async function renderPlans(){
 
     if(investments[plan.name]){
       const inv = investments[plan.name];
-      if(inv.status === "completed"){
+      const maturity = inv.startTime + (inv.durationDays || 7) * 86400000;
+
+      if(inv.status === "completed" || (inv.processed && Date.now() >= maturity)){
         btn.innerText="Completed";
         btn.classList.add("completed-btn");
         btn.disabled=true;
         cd.innerText="Investment completed";
-        return;
+      } else {
+        btn.classList.add("active-btn");
+        btn.innerText = "Investment Ongoing";
+        btn.disabled = true;
+        activeInvestments[plan.name] = inv;
+
+        // --- Immediately calculate and show remaining time for reload ---
+        const remaining = maturity - Date.now();
+        if(cd) cd.innerText = formatRemaining(remaining);
       }
-      btn.classList.add("active-btn");
-      btn.innerText = "Investment Ongoing";
-      btn.disabled = true;
-    }else{
+    } else {
       btn.addEventListener("click",()=>invest(plan));
     }
   });
 
-  // --- Clear previous interval if exists ---
+  startCountdown();
+}
+
+// --- Helper to format countdown ---
+function formatRemaining(ms){
+  if(ms <=0) return "Investment completed";
+  const days = Math.floor(ms / 86400000);
+  const hrs = Math.floor((ms % 86400000) / 3600000);
+  const mins = Math.floor((ms % 3600000)/60000);
+  const secs = Math.floor((ms % 60000)/1000);
+  return `⏱ ${days}d ${hrs}h ${mins}m ${secs}s remaining`;
+}
+
+// --- Countdown logic ---
+function startCountdown(){
   if(countdownInterval) clearInterval(countdownInterval);
 
-  // --- Start single global interval for active investments ---
   countdownInterval = setInterval(async ()=>{
     const keys = Object.keys(activeInvestments);
     if(keys.length === 0){
@@ -216,16 +233,12 @@ async function renderPlans(){
       const inv = activeInvestments[planName];
       const cd = document.getElementById(`cd-${planName}`);
       const btn = document.getElementById(`btn-${planName}`);
-      const maturity = inv.startTime + (inv.durationDays * 86400000);
+      const maturity = inv.startTime + (inv.durationDays || 7) * 86400000;
       const remaining = maturity - Date.now();
 
       if(remaining > 0){
-        const days = Math.floor(remaining / 86400000);
-        const hrs = Math.floor((remaining % 86400000) / 3600000);
-        const mins = Math.floor((remaining % 3600000)/60000);
-        const secs = Math.floor((remaining % 60000)/1000);
-        if(cd) cd.innerText = `⏱ ${days}d ${hrs}h ${mins}m ${secs}s remaining`;
-      }else{
+        if(cd) cd.innerText = formatRemaining(remaining);
+      } else {
         if(cd) cd.innerText="Investment completed";
 
         const latestSnap = await get(ref(db,`investments/${currentUser.uid}/${inv.key}`));
@@ -258,6 +271,7 @@ async function renderPlans(){
   },1000);
 }
 
+// --- Invest function ---
 async function invest(plan){
   if(userData.mainBalance < plan.min){
     showToast("Insufficient balance", false);
@@ -282,6 +296,7 @@ async function invest(plan){
       status:"active",
       processed:false,
       startTime:Date.now(),
+      durationDays: plan.durationDays || 7,
       payout:plan.min*(1+plan.roi/100)
     });
 
@@ -295,4 +310,4 @@ async function invest(plan){
 }
 </script>
 </body>
-</html>
+  </html>
