@@ -81,27 +81,6 @@ body { background:#0f172a; font-family:Inter,sans-serif; }
 100%{transform:translateY(0)}
 }
 
-/* WhatsApp floating button */  
-#whatsappBtn {  
-  position: fixed;
-  bottom: 2cm;
-  right: 1rem;
-  z-index: 999;
-  width: 60px;
-  height: 60px;
-  border-radius: 50%;
-  background-color: #25D366;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  box-shadow: 0 4px 12px rgba(0,0,0,0.3);
-  cursor: pointer;
-  animation: float 3s ease-in-out infinite;
-  transition: transform 0.2s;
-}
-#whatsappBtn:hover { transform: scale(1.12); }
-#whatsappBtn img { width: 32px; height: 32px; }
-
 /* Telegram floating button */  
 #telegramBtn {
   position: fixed;
@@ -202,11 +181,6 @@ body { background:#0f172a; font-family:Inter,sans-serif; }
 <img src="https://upload.wikimedia.org/wikipedia/commons/8/82/Telegram_logo.svg">
 </a>
 
-<!-- WhatsApp Floating Icon -->
-<a id="whatsappBtn" href="https://wa.me/254732364593" target="_blank" title="Chat with Support">
-<img src="https://upload.wikimedia.org/wikipedia/commons/6/6b/WhatsApp.svg">
-</a>
-
 <script type="module">
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
 import { getAuth, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js";
@@ -238,4 +212,4 @@ onAuthStateChanged(auth,user=>{
 });
 </script>
 </body>
-  </html>
+</html>
