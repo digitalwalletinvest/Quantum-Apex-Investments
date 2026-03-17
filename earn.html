@@ -114,12 +114,15 @@ onAuthStateChanged(auth, async user => {
 
   const loadUser = async () => {
     const snap = await get(userRef);
-    return snap.val() || { mainBalance:0, lockedBalance:0, robotPurchased:false };
+    const data = snap.val() || { mainBalance:0, lockedBalance:0, robotPurchased:false };
+    data.mainBalance = Number(data.mainBalance || 0);
+    data.lockedBalance = Number(data.lockedBalance || 0);
+    return data;
   }
 
   let userData = await loadUser();
-  let mainBalance = userData.mainBalance || 0;
-  let lockedBalance = userData.lockedBalance || 0;
+  let mainBalance = userData.mainBalance;
+  let lockedBalance = userData.lockedBalance;
   const robotPurchased = !!userData.robotPurchased;
   userBalanceEl.innerText = `Balance: $${mainBalance} | Locked: $${lockedBalance}`;
 
@@ -144,8 +147,6 @@ onAuthStateChanged(auth, async user => {
   // Listen for payouts in real-time
   onValue(payoutsRef, async snapshot => {
     const payouts = snapshot.val() || {};
-    activeTrades && Object.keys(activeTrades).forEach(pair => delete activeTrades[pair]); // clear old
-
     for(const [id,p] of Object.entries(payouts)){
       const btn = document.getElementById(`btn-${p.pair}`);
       const cdEl = document.getElementById(`cd-${p.pair}`);
@@ -154,8 +155,9 @@ onAuthStateChanged(auth, async user => {
         activeTrades[p.pair] = { ...p, id };
 
         if(Date.now() >= p.maturity){
-          mainBalance += p.amount;
-          lockedBalance -= p.amount;
+          mainBalance += Number(p.amount || 0);
+          lockedBalance -= Number(p.amount || 0);
+          if(lockedBalance < 0) lockedBalance = 0;
           userBalanceEl.innerText = `Balance: $${mainBalance} | Locked: $${lockedBalance}`;
           await update(userRef,{ mainBalance, lockedBalance });
           await update(ref(db,`payouts/${user.uid}/${id}`), { claimed:true, completed:true });
@@ -201,20 +203,23 @@ onAuthStateChanged(auth, async user => {
     btn.onclick = async() => {
       if(!robotPurchased) return notify("Buy robot first");
       const u = await loadUser();
-      if(u.mainBalance < plan.price) return notify("Insufficient balance");
+      const investAmount = Number(plan.price);
+      const payoutAmount = Number(plan.payout);
+
+      if(u.mainBalance < investAmount) return notify("Insufficient balance");
 
       const refId = push(payoutsRef);
       const maturity = Date.now()+plan.days*86400000;
-      await set(refId,{ pair:plan.pair, amount:plan.payout, maturity, claimed:false, completed:false });
-      await update(userRef,{ mainBalance: u.mainBalance-plan.price, lockedBalance: u.lockedBalance+plan.payout });
+      await set(refId,{ pair:plan.pair, amount:payoutAmount, maturity, claimed:false, completed:false });
+      await update(userRef,{ mainBalance: u.mainBalance - investAmount, lockedBalance: u.lockedBalance + payoutAmount });
 
       // Update UI immediately
-      activeTrades[plan.pair] = { pair:plan.pair, amount:plan.payout, maturity, id:refId.key };
+      activeTrades[plan.pair] = { pair:plan.pair, amount:payoutAmount, maturity, id:refId.key };
       btn.innerText = "Trade is ongoing";
       btn.classList.add("active");
       btn.disabled = true;
-      mainBalance -= plan.price;
-      lockedBalance += plan.payout;
+      mainBalance -= investAmount;
+      lockedBalance += payoutAmount;
       userBalanceEl.innerText = `Balance: $${mainBalance} | Locked: $${lockedBalance}`;
       notify("Trade started");
     };
