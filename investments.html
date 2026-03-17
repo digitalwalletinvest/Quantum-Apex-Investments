@@ -68,6 +68,7 @@ const db = getDatabase(app);
 let currentUser = null;      
 let userData = null;      
 let countdownInterval = null;      
+let activeInvestments = {};      
       
 function showToast(msg, success=true){      
   const toast = document.getElementById("toast");      
@@ -91,59 +92,50 @@ const plans = [
   { name: "Plan $10000", min: 10000, roi: 20, durationDays: 7 }      
 ];      
       
-let activeInvestments = {};      
-      
 onAuthStateChanged(auth, async (user) => {      
-  if (!user) {      
-    document.getElementById("plansContainer").innerHTML =      
-      "<h2 class='text-center text-red-400 text-xl col-span-full'>Please login first</h2>";      
-    return;      
-  }      
+  if (!user) return;      
       
   currentUser = user;      
-  const userRef = ref(db, "users/" + user.uid);      
       
-  onValue(userRef, async (snapshot) => {      
-    userData = snapshot.val() || { mainBalance: 0, lockedBalance: 0 };      
-    if (!snapshot.exists()) set(userRef, userData);      
+  onValue(ref(db, "users/" + user.uid), async (snap) => {      
+    userData = snap.val() || { mainBalance: 0, lockedBalance: 0 };      
     await processOfflineMatured();      
     renderPlans();      
   });      
 });      
       
-// FIXED maturity logic      
+// ✅ FIXED maturity      
 async function processOfflineMatured(){      
   const invSnap = await get(ref(db, `investments/${currentUser.uid}`));      
   if(!invSnap.exists()) return;      
       
-  const userSnap = await get(ref(db, `users/${currentUser.uid}`));      
-  let updatedMain = userSnap.val().mainBalance || 0;      
-  let updatedLocked = userSnap.val().lockedBalance || 0;      
+  let main = userData.mainBalance || 0;      
+  let locked = userData.lockedBalance || 0;      
       
   const updates = [];      
       
   invSnap.forEach(child => {      
     const inv = child.val();      
-    const maturityTime = inv.startTime + (inv.durationDays || 7) * 86400000;      
+    const maturity = inv.startTime + inv.durationDays * 86400000;      
       
-    if(inv.status==="active" && !inv.processed && Date.now() >= maturityTime){      
-      updatedMain += inv.payout;      
-      updatedLocked -= inv.payout; // FIXED      
+    if(inv.status==="active" && !inv.processed && Date.now() >= maturity){      
+      main += inv.payout;      
+      locked -= inv.payout;      
+      if(locked < 0) locked = 0;      
       
-      if(updatedLocked < 0) updatedLocked = 0; // anti cheat      
-      
-      updates.push(update(ref(db, `investments/${currentUser.uid}/${child.key}`), { status:"completed", processed:true }));      
-      showToast(`${inv.planName} matured while offline. $${inv.payout} credited.`);      
+      updates.push(update(ref(db, `investments/${currentUser.uid}/${child.key}`), {      
+        status:"completed", processed:true      
+      }));      
     }      
   });      
       
   if(updates.length){      
-    await update(ref(db, `users/${currentUser.uid}`), { mainBalance: updatedMain, lockedBalance: updatedLocked });      
+    await update(ref(db, `users/${currentUser.uid}`), { mainBalance: main, lockedBalance: locked });      
     await Promise.all(updates);      
   }      
 }      
       
-// FIXED invest      
+// ✅ FIXED INVEST      
 async function invest(plan){      
   if(userData.mainBalance < plan.min){      
     showToast("Insufficient balance", false);      
@@ -152,72 +144,100 @@ async function invest(plan){
       
   const payout = plan.min * (1 + plan.roi / 100);      
       
-  const newMain = userData.mainBalance - plan.min;      
-  const newLocked = (userData.lockedBalance || 0) + payout; // FIXED      
+  await update(ref(db,"users/"+currentUser.uid),{      
+    mainBalance:userData.mainBalance - plan.min,      
+    lockedBalance:(userData.lockedBalance || 0) + payout      
+  });      
       
-  try{      
-    await update(ref(db,"users/"+currentUser.uid),{      
-      mainBalance:newMain,      
-      lockedBalance:newLocked      
-    });      
+  const invRef=push(ref(db,`investments/${currentUser.uid}`));      
       
-    const invRef=push(ref(db,`investments/${currentUser.uid}`));      
+  await set(invRef,{      
+    planName:plan.name,      
+    amount:plan.min,      
+    payout:payout,      
+    roi:plan.roi,      
+    status:"active",      
+    processed:false,      
+    startTime:Date.now(),      
+    durationDays: plan.durationDays      
+  });      
       
-    await set(invRef,{      
-      planName:plan.name,      
-      amount:plan.min,      
-      roi:plan.roi,      
-      status:"active",      
-      processed:false,      
-      startTime:Date.now(),      
-      durationDays: plan.durationDays || 7,      
-      payout:payout      
-    });      
-      
-    showToast(`Invested $${plan.min} in ${plan.name}`);      
-    renderPlans();      
-      
-  }catch(err){      
-    console.error(err);      
-    showToast("Investment failed", false);      
-  }      
+  showToast("Investment started");      
 }      
       
-// FIXED countdown maturity      
+// ✅ RESTORED UI      
+async function renderPlans(){      
+  const container = document.getElementById("plansContainer");      
+  container.innerHTML = "";      
+      
+  const snap = await get(ref(db, `investments/${currentUser.uid}`));      
+  activeInvestments = {};      
+  let map = {};      
+      
+  if(snap.exists()){      
+    snap.forEach(c=>{      
+      const v=c.val();      
+      v.key=c.key;      
+      map[v.planName]=v;      
+      if(v.status==="active") activeInvestments[v.planName]=v;      
+    });      
+  }      
+      
+  plans.forEach(plan=>{      
+    const payout=(plan.min*(1+plan.roi/100)).toFixed(2);      
+      
+    const div=document.createElement("div");      
+    div.className="bg-slate-900 p-6 rounded-2xl border border-emerald-500";      
+      
+    div.innerHTML=`      
+    <h3>${plan.name}</h3>      
+    <p>${plan.roi}% ROI</p>      
+    <p>${plan.durationDays} Days</p>      
+    <p>$${plan.min}</p>      
+    <p>Payout: $${payout}</p>      
+    <div id="cd-${plan.name}"></div>      
+    <button id="btn-${plan.name}">Invest</button>`;      
+      
+    container.appendChild(div);      
+      
+    const btn=document.getElementById(`btn-${plan.name}`);      
+      
+    if(map[plan.name]){      
+      btn.disabled=true;      
+      btn.innerText="Ongoing";      
+    } else {      
+      btn.onclick=()=>invest(plan);      
+    }      
+  });      
+      
+  startCountdown();      
+}      
+      
 function startCountdown(){      
   if(countdownInterval) clearInterval(countdownInterval);      
       
-  countdownInterval = setInterval(async ()=>{      
-    for(const planName in activeInvestments){      
-      const inv = activeInvestments[planName];      
-      const maturity = inv.startTime + (inv.durationDays || 7) * 86400000;      
+  countdownInterval=setInterval(async()=>{      
+    for(const name in activeInvestments){      
+      const inv=activeInvestments[name];      
+      const maturity=inv.startTime+inv.durationDays*86400000;      
       
-      if(Date.now() >= maturity){      
-        const latestSnap = await get(ref(db,`investments/${currentUser.uid}/${inv.key}`));      
-        const latestData = latestSnap.val();      
-        if(latestData.processed) continue;      
+      if(Date.now()>=maturity){      
+        const snap=await get(ref(db,`investments/${currentUser.uid}/${inv.key}`));      
+        if(snap.val().processed) continue;      
       
-        const userSnap = await get(ref(db, `users/${currentUser.uid}`));      
-        let main = userSnap.val().mainBalance || 0;      
-        let locked = userSnap.val().lockedBalance || 0;      
+        let main=userData.mainBalance||0;      
+        let locked=userData.lockedBalance||0;      
       
-        main += inv.payout;      
-        locked -= inv.payout; // FIXED      
+        main+=inv.payout;      
+        locked-=inv.payout;      
+        if(locked<0) locked=0;      
       
-        if(locked < 0) locked = 0;      
+        await update(ref(db,"users/"+currentUser.uid),{mainBalance:main,lockedBalance:locked});      
       
-        await update(ref(db,"users/"+currentUser.uid),{      
-          mainBalance:main,      
-          lockedBalance:locked      
-        });      
+        await update(ref(db,`investments/${currentUser.uid}/${inv.key}`),{status:"completed",processed:true});      
       
-        await update(ref(db,`investments/${currentUser.uid}/${inv.key}`),{      
-          status:"completed",      
-          processed:true      
-        });      
-      
-        showToast(`${planName} matured. $${inv.payout} credited.`);      
-        delete activeInvestments[planName];      
+        delete activeInvestments[name];      
+        showToast("Payout received");      
       }      
     }      
   },1000);      
