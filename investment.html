@@ -67,6 +67,13 @@ body { font-family: 'Inter', sans-serif; background:#0f172a; }
   font-style:italic;
 }
 
+/* VIP level visual badges */
+.card.vip1{ border-left:4px solid #10b981; }
+.card.vip2{ border-left:4px solid gold; }
+.card.vip3{ border-left:4px solid #f97316; }
+.card.vip4{ border-left:4px solid #3b82f6; }
+.card.vip5{ border-left:4px solid #a855f7; }
+
 /* Fade-in animation */
 @keyframes fadeIn {
   to {
@@ -190,12 +197,15 @@ onAuthStateChanged(auth,user=>{
       const durationMs=(inv.durationDays||7)*86400000;
       const end=start+durationMs;
 
+      // Determine VIP class for styling
+      const vipClass = inv.planName ? inv.planName.toLowerCase().replace(' ', '') : '';
+
       if(inv.status==="completed"){
         hasCompleted = true;
         if(!document.getElementById(`completed-${id}`)){
           const div=document.createElement("div");
           div.id=`completed-${id}`;
-          div.className="card";
+          div.className=`card ${vipClass}`;
           div.innerHTML=`
             <div class="font-semibold">${inv.planName}</div>
             <div class="text-gray-400">Amount: $${inv.amount} | ROI: ${inv.roi}% | Payout: $${inv.payout}</div>
@@ -209,7 +219,7 @@ onAuthStateChanged(auth,user=>{
       if(!document.getElementById(`active-${id}`)){
         const div=document.createElement("div");
         div.id=`active-${id}`;
-        div.className="card";
+        div.className=`card ${vipClass}`;
         div.innerHTML=`
           <div class="font-semibold">${inv.planName}</div>
           <div class="text-gray-400">Amount: $${inv.amount} | ROI: ${inv.roi}% | Payout: $${inv.payout}</div>
@@ -239,15 +249,12 @@ onAuthStateChanged(auth,user=>{
           const snap=await get(invRef);
           const data=snap.val();
           if(data.status!=="completed"){
-            const balSnap=await get(balanceRef);
-            const currentBal=balSnap.val()||0;
-            await update(balanceRef, currentBal+Number(data.payout));
+            // Just update completed status, do not alter balance here
             await update(invRef,{status:"completed"});
-            showToast(`Profit $${data.payout} credited`);
 
             const divCompleted=document.createElement("div");
             divCompleted.id=`completed-${id}`;
-            divCompleted.className="card";
+            divCompleted.className=`card ${vipClass}`;
             divCompleted.innerHTML=`
               <div class="font-semibold">${data.planName}</div>
               <div class="text-gray-400">Amount: $${data.amount} | ROI: ${data.roi}% | Payout: $${data.payout}</div>
@@ -270,7 +277,6 @@ onAuthStateChanged(auth,user=>{
     const tradesDiv=document.getElementById("trades");
     const completedTradesDiv=document.getElementById("completedTrades");
 
-    // Remove old empty cards with fade-out
     tradesDiv.querySelectorAll(".card.empty").forEach(el=>fadeOutAndRemove(el));
     completedTradesDiv.querySelectorAll(".card.empty").forEach(el=>fadeOutAndRemove(el));
 
