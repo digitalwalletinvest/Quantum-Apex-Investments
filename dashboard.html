@@ -13,9 +13,9 @@
 <style>
 body { background:#0f172a; font-family:Inter,sans-serif; }
 
-.card {   
-  border-radius:14px;   
-  transition: transform 0.2s, box-shadow 0.2s;  
+.card {     
+  border-radius:14px;     
+  transition: transform 0.2s, box-shadow 0.2s;    
 }
 .card:hover { transform: translateY(-2px); box-shadow: 0 8px 20px rgba(0,0,0,0.5); }
 
@@ -81,12 +81,18 @@ body { background:#0f172a; font-family:Inter,sans-serif; }
 100%{transform:translateY(0)}
 }
 
-/* Telegram floating button */  
-#telegramBtn {
+/* Telegram floating button */    
+#telegramBtnWrapper {
   position: fixed;
   bottom: 4.4cm;
   right: 1rem;
   z-index: 999;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.4rem;
+}
+#telegramBtn {
   width: 60px;
   height: 60px;
   border-radius: 50%;
@@ -102,6 +108,15 @@ body { background:#0f172a; font-family:Inter,sans-serif; }
 #telegramBtn:hover { transform: scale(1.12); }
 #telegramBtn img { width: 32px; height: 32px; }
 
+#telegramLabel {
+  font-size: 12px;
+  font-weight: 600;
+  color: #ffffff;
+  background: rgba(0,0,0,0.5);
+  padding: 2px 6px;
+  border-radius: 6px;
+  text-align: center;
+}
 </style>
 </head>
 
@@ -176,10 +191,13 @@ body { background:#0f172a; font-family:Inter,sans-serif; }
 
 </section>
 
-<!-- Telegram Floating Icon -->
-<a id="telegramBtn" href="https://t.me/+tX76czxHZo1hMDk8" target="_blank">
-<img src="https://upload.wikimedia.org/wikipedia/commons/8/82/Telegram_logo.svg">
-</a>
+<!-- Telegram Floating Icon with Label -->
+<div id="telegramBtnWrapper">
+  <a id="telegramBtn" href="https://t.me/+tX76czxHZo1hMDk8" target="_blank">
+    <img src="https://upload.wikimedia.org/wikipedia/commons/8/82/Telegram_logo.svg">
+  </a>
+  <div id="telegramLabel">Join Telegram</div>
+</div>
 
 <script type="module">
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
