@@ -1,247 +1,276 @@
-<!DOCTYPE html>      
-<html lang="en">      
-<head>      
-<meta charset="UTF-8">      
-<meta name="viewport" content="width=device-width, initial-scale=1.0">      
-<title>Investments - Quantum Apex</title>      
-<script src="https://cdn.tailwindcss.com"></script>      
-<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap" rel="stylesheet">      
-<style>      
-body { font-family: 'Inter', sans-serif; background: #0f172a; }      
-.toast {      
-  position: fixed;      
-  top: 50%;      
-  left: 50%;      
-  transform: translate(-50%, -50%);      
-  background: #1e293b;      
-  padding: 20px 40px;      
-  border-radius: 12px;      
-  box-shadow: 0 0 25px rgba(16,185,129,0.4);      
-  display: none;      
-  z-index: 1000;      
-}      
-.countdown {      
-  margin-top: 10px;      
-  font-weight: bold;      
-  color: #10b981;      
-}      
-.active-btn {      
-  background: #0ea5e9 !important;      
-}      
-.completed-btn{      
-  background:#555 !important;      
-  cursor:not-allowed;      
-}      
-</style>      
-</head>      
-      
-<body class="text-white min-h-screen flex flex-col">      
-      
-<nav class="flex justify-between items-center px-6 py-4 bg-slate-900 shadow-lg">      
-<h1 class="text-2xl font-bold text-emerald-400">Investment Plans</h1>      
-<button onclick="window.location.href='dashboard.html'" class="bg-gray-600 px-4 py-2 rounded hover:bg-gray-700">Back</button>      
-</nav>      
-      
-<section class="bg-slate-800 py-12 px-6 text-center flex-1">      
-<h2 class="text-3xl font-bold mb-8">Investment Plans</h2>      
-<div id="plansContainer" class="grid sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6"></div>      
-</section>      
-      
-<div id="toast" class="toast text-center"></div>      
-      
-<script type="module">      
-import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";      
-import { getAuth, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js";      
-import { getDatabase, ref, onValue, update, push, set, get } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-database.js";      
-      
-const firebaseConfig = {      
-  apiKey: "AIzaSyDaEphuY2kQue8m-20DDs68JDgQirAycBE",      
-  authDomain: "digital-wallet-40297.firebaseapp.com",      
-  databaseURL: "https://digital-wallet-40297-default-rtdb.europe-west1.firebasedatabase.app",      
-  projectId: "digital-wallet-40297"      
-};      
-      
-const app = initializeApp(firebaseConfig);      
-const auth = getAuth(app);      
-const db = getDatabase(app);      
-      
-let currentUser = null;      
-let userData = null;      
-let countdownInterval = null;      
-let activeInvestments = {};      
-      
-function showToast(msg, success=true){      
-  const toast = document.getElementById("toast");      
-  toast.innerText = msg;      
-  toast.style.display = "block";      
-  toast.style.border = success ? "2px solid #10b981" : "2px solid red";      
-  setTimeout(()=> toast.style.display="none", 3000);      
-}      
-      
-const plans = [      
-  { name: "Plan $20", min: 20, roi: 20, durationDays: 7 },      
-  { name: "Plan $30", min: 30, roi: 20, durationDays: 7 },      
-  { name: "Plan $50", min: 50, roi: 20, durationDays: 7 },      
-  { name: "Plan $100", min: 100, roi: 20, durationDays: 7 },      
-  { name: "Plan $200", min: 200, roi: 20, durationDays: 7 },      
-  { name: "Plan $400", min: 400, roi: 20, durationDays: 7 },      
-  { name: "Plan $600", min: 600, roi: 20, durationDays: 7 },      
-  { name: "Plan $800", min: 800, roi: 20, durationDays: 7 },      
-  { name: "Plan $1000", min: 1000, roi: 20, durationDays: 7 },      
-  { name: "Plan $5000", min: 5000, roi: 20, durationDays: 7 },      
-  { name: "Plan $10000", min: 10000, roi: 20, durationDays: 7 }      
-];      
-      
-onAuthStateChanged(auth, async (user) => {      
-  if (!user) return;      
-      
-  currentUser = user;      
-      
-  onValue(ref(db, "users/" + user.uid), async (snap) => {      
-    userData = snap.val() || { mainBalance: 0, lockedBalance: 0 };      
-    await processOfflineMatured();      
-    renderPlans();      
-  });      
-});      
-      
-// ✅ FIXED maturity      
-async function processOfflineMatured(){      
-  const invSnap = await get(ref(db, `investments/${currentUser.uid}`));      
-  if(!invSnap.exists()) return;      
-      
-  let main = userData.mainBalance || 0;      
-  let locked = userData.lockedBalance || 0;      
-      
-  const updates = [];      
-      
-  invSnap.forEach(child => {      
-    const inv = child.val();      
-    const maturity = inv.startTime + inv.durationDays * 86400000;      
-      
-    if(inv.status==="active" && !inv.processed && Date.now() >= maturity){      
-      main += inv.payout;      
-      locked -= inv.payout;      
-      if(locked < 0) locked = 0;      
-      
-      updates.push(update(ref(db, `investments/${currentUser.uid}/${child.key}`), {      
-        status:"completed", processed:true      
-      }));      
-    }      
-  });      
-      
-  if(updates.length){      
-    await update(ref(db, `users/${currentUser.uid}`), { mainBalance: main, lockedBalance: locked });      
-    await Promise.all(updates);      
-  }      
-}      
-      
-// ✅ FIXED INVEST      
-async function invest(plan){      
-  if(userData.mainBalance < plan.min){      
-    showToast("Insufficient balance", false);      
-    return;      
-  }      
-      
-  const payout = plan.min * (1 + plan.roi / 100);      
-      
-  await update(ref(db,"users/"+currentUser.uid),{      
-    mainBalance:userData.mainBalance - plan.min,      
-    lockedBalance:(userData.lockedBalance || 0) + payout      
-  });      
-      
-  const invRef=push(ref(db,`investments/${currentUser.uid}`));      
-      
-  await set(invRef,{      
-    planName:plan.name,      
-    amount:plan.min,      
-    payout:payout,      
-    roi:plan.roi,      
-    status:"active",      
-    processed:false,      
-    startTime:Date.now(),      
-    durationDays: plan.durationDays      
-  });      
-      
-  showToast("Investment started");      
-}      
-      
-// ✅ RESTORED UI      
-async function renderPlans(){      
-  const container = document.getElementById("plansContainer");      
-  container.innerHTML = "";      
-      
-  const snap = await get(ref(db, `investments/${currentUser.uid}`));      
-  activeInvestments = {};      
-  let map = {};      
-      
-  if(snap.exists()){      
-    snap.forEach(c=>{      
-      const v=c.val();      
-      v.key=c.key;      
-      map[v.planName]=v;      
-      if(v.status==="active") activeInvestments[v.planName]=v;      
-    });      
-  }      
-      
-  plans.forEach(plan=>{      
-    const payout=(plan.min*(1+plan.roi/100)).toFixed(2);      
-      
-    const div=document.createElement("div");      
-    div.className="bg-slate-900 p-6 rounded-2xl border border-emerald-500";      
-      
-    div.innerHTML=`      
-    <h3>${plan.name}</h3>      
-    <p>${plan.roi}% ROI</p>      
-    <p>${plan.durationDays} Days</p>      
-    <p>$${plan.min}</p>      
-    <p>Payout: $${payout}</p>      
-    <div id="cd-${plan.name}"></div>      
-    <button id="btn-${plan.name}">Invest</button>`;      
-      
-    container.appendChild(div);      
-      
-    const btn=document.getElementById(`btn-${plan.name}`);      
-      
-    if(map[plan.name]){      
-      btn.disabled=true;      
-      btn.innerText="Ongoing";      
-    } else {      
-      btn.onclick=()=>invest(plan);      
-    }      
-  });      
-      
-  startCountdown();      
-}      
-      
-function startCountdown(){      
-  if(countdownInterval) clearInterval(countdownInterval);      
-      
-  countdownInterval=setInterval(async()=>{      
-    for(const name in activeInvestments){      
-      const inv=activeInvestments[name];      
-      const maturity=inv.startTime+inv.durationDays*86400000;      
-      
-      if(Date.now()>=maturity){      
-        const snap=await get(ref(db,`investments/${currentUser.uid}/${inv.key}`));      
-        if(snap.val().processed) continue;      
-      
-        let main=userData.mainBalance||0;      
-        let locked=userData.lockedBalance||0;      
-      
-        main+=inv.payout;      
-        locked-=inv.payout;      
-        if(locked<0) locked=0;      
-      
-        await update(ref(db,"users/"+currentUser.uid),{mainBalance:main,lockedBalance:locked});      
-      
-        await update(ref(db,`investments/${currentUser.uid}/${inv.key}`),{status:"completed",processed:true});      
-      
-        delete activeInvestments[name];      
-        showToast("Payout received");      
-      }      
-    }      
-  },1000);      
-}      
-</script>      
-</body>      
+<!DOCTYPE html>        
+<html lang="en">        
+<head>        
+<meta charset="UTF-8">        
+<meta name="viewport" content="width=device-width, initial-scale=1.0">        
+<title>Investments - Quantum Apex</title>        
+<script src="https://cdn.tailwindcss.com"></script>        
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap" rel="stylesheet">        
+
+<style>        
+body { font-family: 'Inter', sans-serif; background: #0f172a; }        
+
+.toast {        
+  position: fixed;        
+  top: 50%;        
+  left: 50%;        
+  transform: translate(-50%, -50%);        
+  background: #1e293b;        
+  padding: 20px 40px;        
+  border-radius: 12px;        
+  box-shadow: 0 0 25px rgba(16,185,129,0.4);        
+  display: none;        
+  z-index: 1000;        
+}        
+
+.countdown {        
+  margin-top: 10px;        
+  font-weight: bold;        
+  color: #10b981;        
+}        
+
+.invest-btn {        
+  background: linear-gradient(135deg,#10b981,#059669);        
+  padding: 10px;        
+  border-radius: 999px;        
+  font-weight: 600;        
+  transition: 0.3s;        
+}        
+
+.invest-btn:hover {        
+  transform: scale(1.05);        
+}        
+
+.ongoing-btn {        
+  background: #2563eb !important;        
+  color: white;        
+  font-weight: 600;        
+  border-radius: 999px;        
+}        
+
+.payout-badge {        
+  background: linear-gradient(135deg,#facc15,#10b981);        
+  color: #022c22;        
+  padding: 6px 12px;        
+  border-radius: 999px;        
+  font-weight: bold;        
+  display: inline-block;        
+  margin-top: 5px;        
+}        
+
+.plan-card {        
+  position: relative;        
+  padding: 2px;        
+  border-radius: 18px;        
+  background: linear-gradient(270deg,#10b981,#22c55e,#34d399,#10b981);        
+  background-size: 600% 600%;        
+  animation: glowMove 6s ease infinite;        
+}        
+
+.plan-inner {        
+  background: #020617;        
+  border-radius: 16px;        
+  padding: 20px;        
+}        
+
+@keyframes glowMove {        
+  0% { background-position: 0% 50%; }        
+  50% { background-position: 100% 50%; }        
+  100% { background-position: 0% 50%; }        
+}        
+
+.vip-badge {        
+  position: absolute;        
+  top: -10px;        
+  right: -10px;        
+  background: linear-gradient(135deg,#facc15,#f59e0b);        
+  color: #000;        
+  font-size: 12px;        
+  font-weight: bold;        
+  padding: 4px 10px;        
+  border-radius: 999px;        
+}        
+</style>        
+</head>        
+
+<body class="text-white min-h-screen flex flex-col">        
+
+<nav class="flex justify-between items-center px-6 py-4 bg-slate-900 shadow-lg">        
+<h1 class="text-2xl font-bold text-emerald-400">Investment Plans</h1>        
+<button onclick="window.location.href='dashboard.html'" class="bg-gray-600 px-4 py-2 rounded">Back</button>        
+</nav>        
+
+<section class="bg-slate-800 py-12 px-6 text-center flex-1">        
+<h2 class="text-3xl font-bold mb-8">VIP Investment Plans</h2>        
+<div id="plansContainer" class="grid sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6"></div>        
+</section>        
+
+<div id="toast" class="toast text-center"></div>        
+
+<script type="module">        
+import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";        
+import { getAuth, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js";        
+import { getDatabase, ref, onValue, update, push, set, get } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-database.js";        
+
+const firebaseConfig = {        
+  apiKey: "AIzaSyDaEphuY2kQue8m-20DDs68JDgQirAycBE",        
+  authDomain: "digital-wallet-40297.firebaseapp.com",        
+  databaseURL: "https://digital-wallet-40297-default-rtdb.europe-west1.firebasedatabase.app",        
+  projectId: "digital-wallet-40297"        
+};        
+
+const app = initializeApp(firebaseConfig);        
+const auth = getAuth(app);        
+const db = getDatabase(app);        
+
+let currentUser = null;        
+let userData = null;        
+let countdownInterval = null;        
+let activeInvestments = {};        
+
+function showToast(msg, success=true){        
+  const toast = document.getElementById("toast");        
+  toast.innerText = msg;        
+  toast.style.display = "block";        
+  toast.style.border = success ? "2px solid #10b981" : "2px solid red";        
+  setTimeout(()=> toast.style.display="none", 3000);        
+}        
+
+const plans = [        
+  { name: "VIP 1", min: 20, roi: 20, durationDays: 7 },        
+  { name: "VIP 2", min: 30, roi: 20, durationDays: 7 },        
+  { name: "VIP 3", min: 50, roi: 20, durationDays: 7 },        
+  { name: "VIP 4", min: 100, roi: 20, durationDays: 7 },        
+  { name: "VIP 5", min: 200, roi: 20, durationDays: 7 },        
+  { name: "VIP 6", min: 400, roi: 20, durationDays: 7 },        
+  { name: "VIP 7", min: 600, roi: 20, durationDays: 7 },        
+  { name: "VIP 8", min: 800, roi: 20, durationDays: 7 },        
+  { name: "VIP 9", min: 1000, roi: 20, durationDays: 7 },        
+  { name: "VIP 10", min: 5000, roi: 20, durationDays: 7 },        
+  { name: "VIP 11", min: 10000, roi: 20, durationDays: 7 }        
+];        
+
+onAuthStateChanged(auth, async (user) => {        
+  if (!user) return;        
+  currentUser = user;        
+
+  onValue(ref(db, "users/" + user.uid), async (snap) => {        
+    userData = snap.val() || { mainBalance: 0, lockedBalance: 0 };        
+    userData.mainBalance = Number(userData.mainBalance || 0);        
+    userData.lockedBalance = Number(userData.lockedBalance || 0);        
+
+    await processOfflineMatured();        
+    renderPlans();        
+  });        
+});        
+
+async function processOfflineMatured(){        
+  const invSnap = await get(ref(db, `investments/${currentUser.uid}`));        
+  if(!invSnap.exists()) return;        
+
+  let main = Number(userData.mainBalance || 0);        
+  let locked = Number(userData.lockedBalance || 0);        
+
+  invSnap.forEach(child => {        
+    const inv = child.val();        
+    const maturity = inv.startTime + inv.durationDays * 86400000;        
+
+    if(inv.status==="active" && !inv.processed && Date.now() >= maturity){        
+      main += Number(inv.payout || 0);        
+      locked -= Number(inv.payout || 0);        
+      if(locked < 0) locked = 0;        
+
+      update(ref(db, `investments/${currentUser.uid}/${child.key}`), {        
+        status:"completed", processed:true        
+      });        
+    }        
+  });        
+
+  await update(ref(db, `users/${currentUser.uid}`), {        
+    mainBalance: main,        
+    lockedBalance: locked        
+  });        
+}        
+
+async function invest(plan){        
+  const balance = Number(userData.mainBalance || 0);        
+  const amount = Number(plan.min);        
+
+  if(balance < amount){        
+    showToast("Insufficient balance", false);        
+    return;        
+  }        
+
+  const payout = amount * (1 + plan.roi / 100);        
+
+  await update(ref(db,"users/"+currentUser.uid),{        
+    mainBalance: balance - amount,        
+    lockedBalance: Number(userData.lockedBalance || 0) + payout        
+  });        
+
+  const invRef=push(ref(db,`investments/${currentUser.uid}`));        
+
+  await set(invRef,{        
+    planName:plan.name,        
+    amount:amount,        
+    payout:payout,        
+    roi:plan.roi,        
+    status:"active",        
+    processed:false,        
+    startTime:Date.now(),        
+    durationDays: plan.durationDays        
+  });        
+
+  showToast("Investment started");        
+}        
+
+async function renderPlans(){        
+  const container = document.getElementById("plansContainer");        
+  container.innerHTML = "";        
+
+  const snap = await get(ref(db, `investments/${currentUser.uid}`));        
+  activeInvestments = {};        
+  let map = {};        
+
+  if(snap.exists()){        
+    snap.forEach(c=>{        
+      const v=c.val();        
+      v.key=c.key;        
+      map[v.planName]=v;        
+      if(v.status==="active") activeInvestments[v.planName]=v;        
+    });        
+  }        
+
+  plans.forEach(plan=>{        
+    const payout=(plan.min*(1+plan.roi/100)).toFixed(2);        
+
+    const div=document.createElement("div");        
+    div.className="plan-card";        
+
+    div.innerHTML=`        
+    <div class="plan-inner">        
+      <div class="vip-badge">VIP</div>        
+      <h3 class="text-xl font-bold mb-2">${plan.name}</h3>        
+      <p class="text-emerald-400 font-semibold">${plan.roi}% ROI</p>        
+      <p class="text-gray-400">${plan.durationDays} Days</p>        
+      <p class="text-gray-300">$${plan.min}</p>        
+      <p class="payout-badge">Payout: $${payout}</p>        
+      <button id="btn-${plan.name}" class="invest-btn mt-3 w-full">Invest Now</button>        
+    </div>`;        
+
+    container.appendChild(div);        
+
+    const btn=document.getElementById(`btn-${plan.name}`);        
+
+    if(map[plan.name]){        
+      btn.disabled=true;        
+      btn.innerText="Investment ongoing";        
+      btn.classList.add("ongoing-btn");        
+    } else {        
+      btn.onclick=()=>invest(plan);        
+    }        
+  });        
+}        
+</script>        
+</body>        
 </html>
