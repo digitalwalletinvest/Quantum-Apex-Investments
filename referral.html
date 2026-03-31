@@ -88,7 +88,6 @@ body{
 .status-deposit{color:#22c55e;font-weight:bold}
 .status-pending{color:#facc15;font-weight:bold}
 
-/* Back button */
 .back-btn{
   position:fixed;
   top:1rem;
@@ -96,7 +95,10 @@ body{
   background:#ef4444;
   padding:.6rem 1.2rem;
   border-radius:10px;
-}
+  z-index:9999; /* 🔥 FIX: bring it above everything */
+  box-shadow:0 6px 18px rgba(0,0,0,0.4);
+  cursor:pointer;
+    }
 
 /* Toast */
 .toast{
