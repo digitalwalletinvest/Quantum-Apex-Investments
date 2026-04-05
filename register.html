@@ -156,7 +156,7 @@ input:focus{
 <script type="module">
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
 import { getAuth, createUserWithEmailAndPassword } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js";
-import { getDatabase, ref, set, get, update } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-database.js";
+import { getDatabase, ref, set, get } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-database.js";
 
 const app = initializeApp({
   apiKey:"AIzaSyDaEphuY2kQue8m-20DDs68JDgQirAycBE",
@@ -203,55 +203,61 @@ registerBtn.onclick = async () => {
   }
 
   try{
-  const cred = await createUserWithEmailAndPassword(auth,email,pass);
+    const cred = await createUserWithEmailAndPassword(auth,email,pass);
 
-  // 🔥 WAIT UNTIL AUTH IS FULLY READY
-  await new Promise(resolve => {
-    const unsub = auth.onAuthStateChanged(user => {
-      if(user){
-        unsub();
-        resolve();
-      }
+    // 🔥 WAIT UNTIL AUTH IS READY
+    await new Promise(resolve => {
+      const unsub = auth.onAuthStateChanged(user => {
+        if(user){
+          unsub();
+          resolve();
+        }
+      });
     });
-  });
 
-  const uid = auth.currentUser.uid;
-  const myCode = genCode();
+    const uid = auth.currentUser.uid;
+    const myCode = genCode();
 
-  let referredBy = null;
+    let referredBy = null;
 
-  if(refCode){
-    const refSnap = await get(ref(db,"public/refCodes/"+refCode));
-    if(refSnap.exists()){
-      referredBy = refSnap.val();
-    } else {
-      showToast("Referral code invalid", false);
-      return;
+    if(refCode){
+      const refSnap = await get(ref(db,"public/refCodes/"+refCode));
+      if(refSnap.exists()){
+        referredBy = refSnap.val();
+      } else {
+        showToast("Referral code invalid", false);
+        return;
+      }
     }
+
+    // 🔥 BUILD DATA CLEANLY (NO EMPTY referredBy)
+    const userData = {
+      uid,
+      name,
+      email,
+      phone,
+      balance: 0,
+      lockedBalance: 0,
+      refCode: myCode,
+      createdAt: Date.now()
+    };
+
+    if(referredBy){
+      userData.referredBy = referredBy;
+    }
+
+    await set(ref(db,"users/"+uid), userData);
+
+    await set(ref(db,"public/refCodes/"+myCode), uid);
+
+    showToast("Account created successfully");
+    setTimeout(()=>location.href="dashboard.html",1200);
+
+  }catch(e){
+    console.log("FULL ERROR:", e);
+    showToast(e.message,false);
   }
-
-  await set(ref(db,"users/"+uid),{
-    uid,
-    name,
-    email,
-    phone,
-    balance: 0,
-    lockedBalance: 0,
-    refCode: myCode,
-    referredBy: referredBy || "",
-    createdAt: Date.now()
-  });
-
-  await set(ref(db,"public/refCodes/"+myCode), uid);
-
-  showToast("Account created successfully");
-  setTimeout(()=>location.href="dashboard.html",1200);
-
-}catch(e){
-  console.log("FULL ERROR:", e); // 🔥 ADD THIS
-  showToast(e.message,false);
-  }
-</script>
-
+};
+  </script>
 </body>
 </html>
