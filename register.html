@@ -203,58 +203,54 @@ registerBtn.onclick = async () => {
   }
 
   try{
-    const cred = await createUserWithEmailAndPassword(auth,email,pass);
-    const uid = cred.user.uid;
-    const myCode = genCode();
+  const cred = await createUserWithEmailAndPassword(auth,email,pass);
 
-    let referredBy = null;
-
-    if(refCode){
-      const refSnap = await get(ref(db,"public/refCodes/"+refCode));
-      if(refSnap.exists()){
-        referredBy = refSnap.val();
-      } else {
-        showToast("Referral code invalid", false);
-        return;
+  // 🔥 WAIT UNTIL AUTH IS FULLY READY
+  await new Promise(resolve => {
+    const unsub = auth.onAuthStateChanged(user => {
+      if(user){
+        unsub();
+        resolve();
       }
+    });
+  });
+
+  const uid = auth.currentUser.uid;
+  const myCode = genCode();
+
+  let referredBy = null;
+
+  if(refCode){
+    const refSnap = await get(ref(db,"public/refCodes/"+refCode));
+    if(refSnap.exists()){
+      referredBy = refSnap.val();
+    } else {
+      showToast("Referral code invalid", false);
+      return;
     }
-  await auth.currentUser.reload();
-    await set(ref(db,"users/"+uid),{
-  uid,
-  name,
-  email,
-  phone,
-
-  balance: 0,
-  lockedBalance: 0,
-
-  refCode: myCode,
-  referredBy: referredBy || "",
-
-  createdAt: Date.now()
-});
-
-    await set(ref(db,"public/refCodes/"+myCode), uid);
-    if(referredBy){
-      const refUserRef = ref(db,"users/"+referredBy);
-      const refUserSnap = await get(refUserRef);
-      if(refUserSnap.exists()){
-        const refUser = refUserSnap.val();
-        const newBalance = (refUser.referralBalance || 0) + 6;
-        await update(refUserRef,{ referralBalance:newBalance });
-      }
-    }
-
-    showToast("Account created successfully");
-    setTimeout(()=>location.href="dashboard.html",1200);
-
-  }catch(e){
-    if(e.code === "auth/email-already-in-use"){ showToast("Email already in use", false); }
-    else if(e.code === "auth/invalid-email"){ showToast("Invalid email address", false); }
-    else if(e.code === "auth/weak-password"){ showToast("Password is too weak", false); }
-    else{ showToast(e.message,false); }
   }
-};
+
+  await set(ref(db,"users/"+uid),{
+    uid,
+    name,
+    email,
+    phone,
+    balance: 0,
+    lockedBalance: 0,
+    refCode: myCode,
+    referredBy: referredBy || "",
+    createdAt: Date.now()
+  });
+
+  await set(ref(db,"public/refCodes/"+myCode), uid);
+
+  showToast("Account created successfully");
+  setTimeout(()=>location.href="dashboard.html",1200);
+
+}catch(e){
+  console.log("FULL ERROR:", e); // 🔥 ADD THIS
+  showToast(e.message,false);
+  }
 </script>
 
 </body>
